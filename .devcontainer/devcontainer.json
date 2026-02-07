@@ -1,0 +1,17 @@
+{
+    "name": "Go API Development",
+    "dockerComposeFile": "../docker-compose-dev.yml",
+    "service": "api",
+    "workspaceFolder": "/app",
+    "customizations": {
+      "vscode": {
+        "extensions": ["golang.go", "ms-azuretools.vscode-docker"],
+        "settings": {
+          "go.toolsManagement.autoUpdate": true,
+          "go.useLanguageServer": true
+        }
+      }
+    },
+    "forwardPorts": [8080, 5433],
+    "postCreateCommand": ""
+  }

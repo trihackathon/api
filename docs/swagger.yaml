@@ -1,0 +1,55 @@
+definitions:
+  requests.DebugEchoRequest:
+    properties:
+      message:
+        type: string
+    type: object
+  response.DebugEchoResponse:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /debug/echo:
+    post:
+      parameters:
+      - description: メッセージ
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/requests.DebugEchoRequest'
+      responses:
+        "200":
+          description: OK! Echo is healthy
+          schema:
+            $ref: '#/definitions/response.DebugEchoResponse'
+      summary: Echo
+      tags:
+      - debug
+  /debug/endpoints:
+    get:
+      responses:
+        "200":
+          description: List of available endpoints
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List endpoints
+      tags:
+      - debug
+  /debug/health:
+    get:
+      responses:
+        "200":
+          description: OK! API is healthy
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - debug
+swagger: "2.0"

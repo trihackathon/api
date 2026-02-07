@@ -1,0 +1,89 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/debug/echo": {
+            "post": {
+                "tags": [
+                    "debug"
+                ],
+                "summary": "Echo",
+                "parameters": [
+                    {
+                        "description": "メッセージ",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.DebugEchoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK! Echo is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/response.DebugEchoResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/endpoints": {
+            "get": {
+                "tags": [
+                    "debug"
+                ],
+                "summary": "List endpoints",
+                "responses": {
+                    "200": {
+                        "description": "List of available endpoints",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/health": {
+            "get": {
+                "tags": [
+                    "debug"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK! API is healthy",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "requests.DebugEchoRequest": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.DebugEchoResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
