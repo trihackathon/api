@@ -28,6 +28,10 @@ go.work.sum
 .env
 .env.psql
 tmp
+
+# Firebase service account key
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
 # Editor/IDE
 # .idea/
 # .vscode/

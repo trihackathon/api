@@ -1,7 +1,25 @@
 definitions:
+  requests.CreateUserRequest:
+    properties:
+      age:
+        example: 25
+        type: integer
+      name:
+        example: 山田太郎
+        type: string
+    type: object
   requests.DebugEchoRequest:
     properties:
       message:
+        type: string
+    type: object
+  requests.UpdateUserRequest:
+    properties:
+      age:
+        example: 25
+        type: integer
+      name:
+        example: 山田太郎
         type: string
     type: object
   response.DebugEchoResponse:
@@ -9,9 +27,123 @@ definitions:
       message:
         type: string
     type: object
+  response.DebugTokenResponse:
+    properties:
+      id_token:
+        example: eyJhbGciOiJSUzI1NiIs...
+        type: string
+      uid:
+        example: hTFudCor2wT3Bab570LvOm2X6z73
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        example: invalid_token
+        type: string
+      message:
+        example: エラーが発生しました
+        type: string
+    type: object
+  response.UserResponse:
+    properties:
+      age:
+        example: 25
+        type: integer
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      id:
+        example: firebaseUID123
+        type: string
+      name:
+        example: 山田太郎
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /api/users/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 自分のユーザー情報を取得
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ユーザー情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ユーザー作成
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 更新するユーザー情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 自分のユーザー情報を更新
+      tags:
+      - users
   /debug/echo:
     post:
       parameters:
@@ -52,4 +184,32 @@ paths:
       summary: Health check
       tags:
       - debug
+  /debug/token:
+    get:
+      description: Firebase カスタムトークンを生成し、IDトークンに交換して返す（開発環境専用）
+      parameters:
+      - description: Firebase UID
+        in: query
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.DebugTokenResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: デバッグ用IDトークン生成
+      tags:
+      - debug
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -17,8 +17,6 @@ migrate_local: ## ローカル環境のデータベースにマイグレーシ�
 migrate_prd: ## 本番環境のデータベースにマイグレーションを適用する
 	FLAVOR=prd go run tools/migrate/migrate.go
 
-test: ## testを実行する
-	go test -v ./tests/...
 
 mockgen: ## interfaceに従ってmockを生成する
 	mkdir -p ./tests/mock
