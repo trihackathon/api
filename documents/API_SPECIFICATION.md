@@ -360,18 +360,133 @@ type WeeklyEvaluation struct {
 
 **ユニーク制約**: `(team_id, user_id, week_number)`
 
-### ER図（概要）
+### ER図
 
-```
-users ──────┬──< team_members >──── teams
-            │                        │
-            ├──< activities          ├──< goals
-            │       │                │
-            │       ├──< gps_points  ├──< invite_codes
-            │       │                │
-            │       └──> gym_locations
-            │                        │
-            └──< weekly_evaluations >┘
+```mermaid
+erDiagram
+    users {
+        varchar(128) id PK "Firebase UID"
+        varchar(100) name "NOT NULL"
+        int age "NOT NULL"
+        varchar(20) exercise_level "DEFAULT 'beginner'"
+        varchar(50) timezone "DEFAULT 'Asia/Tokyo'"
+        text profile_image_url "NULLABLE"
+        timestamp created_at "autoCreateTime"
+        timestamp updated_at "autoUpdateTime"
+    }
+
+    teams {
+        varchar(26) id PK "ULID"
+        varchar(100) name "NOT NULL"
+        varchar(20) exercise_type "running / gym"
+        varchar(20) strictness "loose / normal / sparta"
+        varchar(20) status "forming / active / completed / disbanded"
+        int max_hp "DEFAULT 100"
+        int current_hp "DEFAULT 100"
+        int current_week "DEFAULT 0"
+        timestamp started_at "NULLABLE"
+        timestamp created_at "autoCreateTime"
+        timestamp updated_at "autoUpdateTime"
+    }
+
+    team_members {
+        varchar(26) id PK "ULID"
+        varchar(26) team_id FK "NOT NULL"
+        varchar(128) user_id FK "NOT NULL"
+        varchar(10) role "leader / member"
+        timestamp joined_at "autoCreateTime"
+    }
+
+    invite_codes {
+        varchar(6) code PK "6桁英数大文字"
+        varchar(26) team_id FK "NOT NULL"
+        varchar(128) created_by FK "NOT NULL"
+        varchar(128) used_by "NULLABLE"
+        timestamp used_at "NULLABLE"
+        timestamp expires_at "NOT NULL (24h)"
+        timestamp created_at "autoCreateTime"
+    }
+
+    goals {
+        varchar(26) id PK "ULID"
+        varchar(26) team_id FK "UNIQUE NOT NULL"
+        varchar(20) exercise_type "running / gym"
+        decimal target_distance_km "NULLABLE (running用)"
+        int target_visits_per_week "NULLABLE (gym用)"
+        int target_min_duration_min "NULLABLE (gym用)"
+        timestamp created_at "autoCreateTime"
+        timestamp updated_at "autoUpdateTime"
+    }
+
+    activities {
+        varchar(26) id PK "ULID"
+        varchar(128) user_id FK "NOT NULL"
+        varchar(26) team_id FK "NOT NULL"
+        varchar(20) exercise_type "running / gym"
+        varchar(20) status "in_progress / completed / abandoned"
+        timestamp started_at "NOT NULL"
+        timestamp ended_at "NULLABLE"
+        decimal distance_km "DEFAULT 0 (running用)"
+        varchar(26) gym_location_id FK "NULLABLE (gym用)"
+        boolean auto_detected "DEFAULT false"
+        int duration_min "DEFAULT 0"
+        timestamp created_at "autoCreateTime"
+        timestamp updated_at "autoUpdateTime"
+    }
+
+    gps_points {
+        varchar(26) id PK "ULID"
+        varchar(26) activity_id FK "NOT NULL"
+        decimal latitude "NOT NULL"
+        decimal longitude "NOT NULL"
+        decimal accuracy "NULLABLE (メートル)"
+        timestamp timestamp "NOT NULL"
+    }
+
+    gym_locations {
+        varchar(26) id PK "ULID"
+        varchar(128) user_id FK "NOT NULL"
+        varchar(100) name "NOT NULL"
+        decimal latitude "NOT NULL"
+        decimal longitude "NOT NULL"
+        int radius_m "DEFAULT 100"
+        timestamp created_at "autoCreateTime"
+        timestamp updated_at "autoUpdateTime"
+    }
+
+    weekly_evaluations {
+        varchar(26) id PK "ULID"
+        varchar(26) team_id FK "NOT NULL"
+        varchar(128) user_id FK "NOT NULL"
+        int week_number "NOT NULL"
+        boolean target_met "DEFAULT false"
+        decimal total_distance_km "DEFAULT 0"
+        int total_visits "DEFAULT 0"
+        int total_duration_min "DEFAULT 0"
+        int hp_change "DEFAULT 0"
+        timestamp evaluated_at "autoCreateTime"
+    }
+
+    %% === リレーション ===
+
+    users ||--o{ team_members : "所属"
+    teams ||--o{ team_members : "構成員"
+
+    teams ||--o{ invite_codes : "招待"
+    users ||--o{ invite_codes : "作成"
+
+    teams ||--o| goals : "目標"
+
+    users ||--o{ activities : "実施"
+    teams ||--o{ activities : "記録"
+    gym_locations ||--o{ activities : "場所"
+
+    activities ||--o{ gps_points : "GPS軌跡"
+
+    users ||--o{ gym_locations : "登録"
+
+    users ||--o{ weekly_evaluations : "評価対象"
+    teams ||--o{ weekly_evaluations : "週次評価"
 ```
 
 ---
