@@ -15,18 +15,24 @@ type FirebaseAdapter struct {
 }
 
 func NewFirebaseAdapter() *FirebaseAdapter {
-	credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if credPath == "" {
-		log.Fatal("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set")
-	}
+	ctx := context.Background()
 
-	opt := option.WithCredentialsFile(credPath)
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	var app *firebase.App
+	var err error
+
+	// GOOGLE_APPLICATION_CREDENTIALS が設定されていればファイルを使う（ローカル開発用）
+	// 未設定の場合はGCPのApplication Default Credentialsを使う（Cloud Run等）
+	if credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); credPath != "" {
+		opt := option.WithCredentialsFile(credPath)
+		app, err = firebase.NewApp(ctx, nil, opt)
+	} else {
+		app, err = firebase.NewApp(ctx, nil)
+	}
 	if err != nil {
 		log.Fatalf("Firebase初期化エラー: %v", err)
 	}
 
-	authClient, err := app.Auth(context.Background())
+	authClient, err := app.Auth(ctx)
 	if err != nil {
 		log.Fatalf("Firebase Auth初期化エラー: %v", err)
 	}

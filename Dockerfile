@@ -3,10 +3,16 @@ FROM golang:1.25 AS builder
 
 WORKDIR /app
 
+# Install swag for generating Swagger docs
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
 COPY go.mod go.sum* ./
 RUN go mod download
 
 COPY . .
+
+# Generate Swagger docs before building
+RUN swag init -g main.go
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/main .
 

@@ -1,2 +1,37 @@
-tmp
+# Git
+.git
+.gitignore
+
+# Environment files
 .env
+.env.*
+
+# Firebase service account keys (Cloud RunではADCを使用)
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Development
+.air.toml
+.devcontainer
+.claude
+.github
+tmp
+Dockerfile.dev
+docker-compose*.yml
+
+# Documentation
+docs
+documents
+README.md
+
+# IDE
+.idea
+.vscode
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
