@@ -15,6 +15,12 @@ import (
 	"github.com/trihackathon/api/middleware"
 )
 
+// @title Trihackathon API
+// @version 1.0
+// @description Trihackathon API Server
+// @host localhost:8080
+// @BasePath /
+//
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
@@ -38,6 +44,14 @@ func main() {
 	// コントローラー初期化
 	debugController := controller.NewDebugController(fa)
 	userController := controller.NewUserController(db)
+	teamController := controller.NewTeamController(db)
+	inviteController := controller.NewInviteController(db)
+	goalController := controller.NewGoalController(db)
+	activityController := controller.NewActivityController(db)
+	gymController := controller.NewGymController(db)
+	teamStatusController := controller.NewTeamStatusController(db)
+	evaluationController := controller.NewEvaluationController(db)
+	predictionController := controller.NewPredictionController(db)
 
 	// 認証不要のルート
 	e.GET("/debug/health", debugController.Health)
@@ -47,9 +61,52 @@ func main() {
 	api := e.Group("/api")
 	api.Use(middleware.FirebaseAuth(fa))
 
+	// ユーザー API
 	api.GET("/users/me", userController.GetMe)
 	api.POST("/users/me", userController.CreateMe)
 	api.PUT("/users/me", userController.UpdateMe)
+
+	// チーム API
+	api.POST("/teams", teamController.CreateTeam)
+	api.GET("/teams/me", teamController.GetMyTeam)
+	api.GET("/teams/:teamId", teamController.GetTeam)
+
+	// 招待コード API
+	api.POST("/teams/:teamId/invite", inviteController.CreateInviteCode)
+	api.POST("/teams/join", inviteController.JoinTeam)
+
+	// 目標設定 API
+	api.POST("/teams/:teamId/goal", goalController.CreateGoal)
+	api.GET("/teams/:teamId/goal", goalController.GetGoal)
+	api.PUT("/teams/:teamId/goal", goalController.UpdateGoal)
+
+	// アクティビティ API（ランニング）
+	api.POST("/activities/running/start", activityController.StartRunning)
+	api.POST("/activities/running/:activityId/finish", activityController.FinishRunning)
+	api.POST("/activities/running/:activityId/gps", activityController.SendGPSPoints)
+	api.GET("/activities/running/:activityId", activityController.GetRunningActivity)
+
+	// アクティビティ API（ジム）
+	api.POST("/gym-locations", gymController.CreateGymLocation)
+	api.GET("/gym-locations", gymController.GetGymLocations)
+	api.DELETE("/gym-locations/:locationId", gymController.DeleteGymLocation)
+	api.POST("/activities/gym/checkin", gymController.GymCheckin)
+	api.POST("/activities/gym/:activityId/checkout", gymController.GymCheckout)
+	api.GET("/activities/gym/:activityId", gymController.GetGymActivity)
+
+	// アクティビティ API（共通）
+	api.GET("/activities", activityController.GetMyActivities)
+	api.GET("/teams/:teamId/activities", activityController.GetTeamActivities)
+
+	// チーム HP・状態 API
+	api.GET("/teams/:teamId/status", teamStatusController.GetTeamStatus)
+
+	// 週次評価 API
+	api.GET("/teams/:teamId/evaluations", evaluationController.GetEvaluations)
+	api.GET("/teams/:teamId/evaluations/current", evaluationController.GetCurrentWeekEvaluation)
+
+	// 失敗予測 API
+	api.GET("/predictions/me", predictionController.GetMyPrediction)
 
 	// Health check endpoint
 	// @Summary      Health check
