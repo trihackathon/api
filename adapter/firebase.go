@@ -20,13 +20,21 @@ func NewFirebaseAdapter() *FirebaseAdapter {
 	var app *firebase.App
 	var err error
 
+	// Cloud RunのGCPプロジェクトとFirebaseプロジェクトが異なる場合に対応
+	// FIREBASE_PROJECT_ID で明示的に指定可能
+	var config *firebase.Config
+	if projectID := os.Getenv("FIREBASE_PROJECT_ID"); projectID != "" {
+		config = &firebase.Config{ProjectID: projectID}
+		log.Printf("Firebase: using explicit project ID: %s", projectID)
+	}
+
 	// GOOGLE_APPLICATION_CREDENTIALS が設定されていればファイルを使う（ローカル開発用）
 	// 未設定の場合はGCPのApplication Default Credentialsを使う（Cloud Run等）
 	if credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); credPath != "" {
 		opt := option.WithCredentialsFile(credPath)
-		app, err = firebase.NewApp(ctx, nil, opt)
+		app, err = firebase.NewApp(ctx, config, opt)
 	} else {
-		app, err = firebase.NewApp(ctx, nil)
+		app, err = firebase.NewApp(ctx, config)
 	}
 	if err != nil {
 		log.Fatalf("Firebase初期化エラー: %v", err)
