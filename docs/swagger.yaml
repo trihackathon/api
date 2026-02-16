@@ -58,6 +58,10 @@ definitions:
       accuracy:
         example: 5
         type: number
+      client_id:
+        description: PWA側で生成したユニークID（オプション）
+        example: uuid-v4-here
+        type: string
       latitude:
         example: 35.6812
         type: number
