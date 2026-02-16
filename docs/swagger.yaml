@@ -39,15 +39,6 @@ definitions:
         example: normal
         type: string
     type: object
-  requests.CreateUserRequest:
-    properties:
-      age:
-        example: 25
-        type: integer
-      name:
-        example: 山田太郎
-        type: string
-    type: object
   requests.DebugEchoRequest:
     properties:
       message:
@@ -122,15 +113,6 @@ definitions:
       longitude:
         example: 139.7671248
         type: number
-    type: object
-  requests.UpdateUserRequest:
-    properties:
-      age:
-        example: 25
-        type: integer
-      name:
-        example: 山田太郎
-        type: string
     type: object
   response.ActivityResponse:
     properties:
@@ -518,8 +500,17 @@ definitions:
       age:
         example: 25
         type: integer
+      avatar_url:
+        example: https://r2.example.com/avatars/uid/image.jpg
+        type: string
+      chronotype:
+        example: morning
+        type: string
       created_at:
         example: "2024-01-01T00:00:00Z"
+        type: string
+      gender:
+        example: male
         type: string
       id:
         example: firebaseUID123
@@ -530,6 +521,9 @@ definitions:
       updated_at:
         example: "2024-01-01T00:00:00Z"
         type: string
+      weight:
+        example: 70
+        type: integer
     type: object
   response.WeekActivitySummary:
     properties:
@@ -1381,14 +1375,37 @@ paths:
       - users
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       parameters:
-      - description: ユーザー情報
-        in: body
-        name: body
+      - description: 名前
+        in: formData
+        name: name
         required: true
-        schema:
-          $ref: '#/definitions/requests.CreateUserRequest'
+        type: string
+      - description: 年齢
+        in: formData
+        name: age
+        required: true
+        type: integer
+      - description: 性別 (male/female/other)
+        in: formData
+        name: gender
+        required: true
+        type: string
+      - description: 体重 (kg)
+        in: formData
+        name: weight
+        required: true
+        type: integer
+      - description: 朝型夜型 (morning/night/both)
+        in: formData
+        name: chronotype
+        required: true
+        type: string
+      - description: プロフィール写真
+        in: formData
+        name: avatar
+        type: file
       produces:
       - application/json
       responses:
@@ -1411,14 +1428,32 @@ paths:
       - users
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       parameters:
-      - description: 更新するユーザー情報
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/requests.UpdateUserRequest'
+      - description: 名前
+        in: formData
+        name: name
+        type: string
+      - description: 年齢
+        in: formData
+        name: age
+        type: integer
+      - description: 性別 (male/female/other)
+        in: formData
+        name: gender
+        type: string
+      - description: 体重 (kg)
+        in: formData
+        name: weight
+        type: integer
+      - description: 朝型夜型 (morning/night/both)
+        in: formData
+        name: chronotype
+        type: string
+      - description: プロフィール写真
+        in: formData
+        name: avatar
+        type: file
       produces:
       - application/json
       responses:

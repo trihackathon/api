@@ -1246,7 +1246,7 @@ const docTemplate = `{
                     }
                 ],
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1257,13 +1257,40 @@ const docTemplate = `{
                 "summary": "自分のユーザー情報を更新",
                 "parameters": [
                     {
-                        "description": "更新するユーザー情報",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.UpdateUserRequest"
-                        }
+                        "type": "string",
+                        "description": "名前",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "年齢",
+                        "name": "age",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "性別 (male/female/other)",
+                        "name": "gender",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "体重 (kg)",
+                        "name": "weight",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "朝型夜型 (morning/night/both)",
+                        "name": "chronotype",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "プロフィール写真",
+                        "name": "avatar",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1294,7 +1321,7 @@ const docTemplate = `{
                     }
                 ],
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1305,13 +1332,45 @@ const docTemplate = `{
                 "summary": "ユーザー作成",
                 "parameters": [
                     {
-                        "description": "ユーザー情報",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.CreateUserRequest"
-                        }
+                        "type": "string",
+                        "description": "名前",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "年齢",
+                        "name": "age",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "性別 (male/female/other)",
+                        "name": "gender",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "体重 (kg)",
+                        "name": "weight",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "朝型夜型 (morning/night/both)",
+                        "name": "chronotype",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "プロフィール写真",
+                        "name": "avatar",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1491,19 +1550,6 @@ const docTemplate = `{
                 }
             }
         },
-        "requests.CreateUserRequest": {
-            "type": "object",
-            "properties": {
-                "age": {
-                    "type": "integer",
-                    "example": 25
-                },
-                "name": {
-                    "type": "string",
-                    "example": "山田太郎"
-                }
-            }
-        },
         "requests.DebugEchoRequest": {
             "type": "object",
             "properties": {
@@ -1610,19 +1656,6 @@ const docTemplate = `{
                 "longitude": {
                     "type": "number",
                     "example": 139.7671248
-                }
-            }
-        },
-        "requests.UpdateUserRequest": {
-            "type": "object",
-            "properties": {
-                "age": {
-                    "type": "integer",
-                    "example": 25
-                },
-                "name": {
-                    "type": "string",
-                    "example": "山田太郎"
                 }
             }
         },
@@ -2169,9 +2202,21 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 25
                 },
+                "avatar_url": {
+                    "type": "string",
+                    "example": "https://r2.example.com/avatars/uid/image.jpg"
+                },
+                "chronotype": {
+                    "type": "string",
+                    "example": "morning"
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2024-01-01T00:00:00Z"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "id": {
                     "type": "string",
@@ -2184,6 +2229,10 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-01T00:00:00Z"
+                },
+                "weight": {
+                    "type": "integer",
+                    "example": 70
                 }
             }
         },
