@@ -416,11 +416,43 @@ func (ctrl *ActivityController) GetMyActivities(c echo.Context) error {
 // @Router       /api/teams/{teamId}/activities [get]
 // @Security     BearerAuth
 func (ctrl *ActivityController) GetTeamActivities(c echo.Context) error {
-	// TODO: チーム機能未実装
-	return c.JSON(http.StatusNotImplemented, response.ErrorResponse{
-		Error:   "not_implemented",
-		Message: "チーム機能は未実装です",
-	})
+	uid := c.Get("uid").(string)
+	teamId := c.Param("teamId")
+
+	// チーム存在確認
+	var team models.Team
+	if err := ctrl.db.First(&team, "id = ?", teamId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "team_not_found",
+			Message: "チームが見つかりません",
+		})
+	}
+
+	// メンバー確認
+	var member models.TeamMember
+	if err := ctrl.db.First(&member, "team_id = ? AND user_id = ?", teamId, uid).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "チームのメンバーではありません",
+		})
+	}
+
+	var activities []models.Activity
+	if err := ctrl.db.Where("team_id = ?", teamId).
+		Order("started_at DESC").
+		Find(&activities).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "fetch_failed",
+			Message: "アクティビティの取得に失敗しました",
+		})
+	}
+
+	responses := make([]response.ActivityResponse, len(activities))
+	for i, activity := range activities {
+		responses[i] = toActivityResponse(activity, nil)
+	}
+
+	return c.JSON(http.StatusOK, responses)
 }
 
 // Helper functions
