@@ -2,10 +2,13 @@ package controller
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/trihackathon/api/models"
 	"github.com/trihackathon/api/requests"
 	"github.com/trihackathon/api/response"
+	"github.com/trihackathon/api/utils"
 	"gorm.io/gorm"
 )
 
@@ -32,11 +35,65 @@ func (ctrl *InviteController) CreateInviteCode(c echo.Context) error {
 	uid := c.Get("uid").(string)
 	teamId := c.Param("teamId")
 
-	// TODO: ビジネスロジック実装
-	_ = uid
-	_ = teamId
+	// チーム存在確認
+	var team models.Team
+	if err := ctrl.db.First(&team, "id = ?", teamId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "team_not_found",
+			Message: "チームが見つかりません",
+		})
+	}
 
-	return c.JSON(http.StatusCreated, response.InviteCodeResponse{})
+	// メンバーか確認
+	var member models.TeamMember
+	if err := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).First(&member).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "このチームのメンバーではありません",
+		})
+	}
+
+	// チーム状態がformingか確認
+	if team.Status != "forming" {
+		return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
+			Error:   "team_not_forming",
+			Message: "チームはメンバー募集中ではありません",
+		})
+	}
+
+	// メンバー数確認
+	var memberCount int64
+	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", teamId).Count(&memberCount)
+	if memberCount >= 3 {
+		return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
+			Error:   "team_full",
+			Message: "チームは満員です",
+		})
+	}
+
+	code := utils.GenerateInviteCode()
+	inviteCode := models.InviteCode{
+		Code:      code,
+		TeamID:    teamId,
+		CreatedBy: uid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	if err := ctrl.db.Create(&inviteCode).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "create_failed",
+			Message: "招待コードの生成に失敗しました",
+		})
+	}
+
+	return c.JSON(http.StatusCreated, response.InviteCodeResponse{
+		Code:               code,
+		TeamID:             team.ID,
+		TeamName:           team.Name,
+		ExerciseType:       team.ExerciseType,
+		ExpiresAt:          inviteCode.ExpiresAt.Format(time.RFC3339),
+		CurrentMemberCount: int(memberCount),
+	})
 }
 
 // JoinTeam 招待コードでチーム参加
@@ -65,8 +122,92 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 		})
 	}
 
-	// TODO: ビジネスロジック実装
-	_ = uid
+	// コード存在確認
+	var inviteCode models.InviteCode
+	if err := ctrl.db.First(&inviteCode, "code = ?", req.Code).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "code_not_found",
+			Message: "招待コードが見つかりません",
+		})
+	}
 
-	return c.JSON(http.StatusOK, response.JoinTeamResponse{})
+	// 有効期限チェック
+	if time.Now().After(inviteCode.ExpiresAt) {
+		return c.JSON(http.StatusGone, response.ErrorResponse{
+			Error:   "code_expired",
+			Message: "招待コードの有効期限が切れています",
+		})
+	}
+
+	// 使用済みチェック
+	if inviteCode.UsedBy != nil {
+		return c.JSON(http.StatusGone, response.ErrorResponse{
+			Error:   "code_used",
+			Message: "招待コードは既に使用されています",
+		})
+	}
+
+	// 既にアクティブチーム所属チェック
+	var existingMember models.TeamMember
+	err := ctrl.db.
+		Joins("JOIN teams ON teams.id = team_members.team_id").
+		Where("team_members.user_id = ? AND teams.status IN ?", uid, []string{"forming", "active"}).
+		First(&existingMember).Error
+	if err == nil {
+		return c.JSON(http.StatusConflict, response.ErrorResponse{
+			Error:   "already_in_team",
+			Message: "既にアクティブなチームに所属しています",
+		})
+	}
+
+	// チーム満員チェック
+	var memberCount int64
+	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", inviteCode.TeamID).Count(&memberCount)
+	if memberCount >= 3 {
+		return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
+			Error:   "team_full",
+			Message: "チームは満員です",
+		})
+	}
+
+	// トランザクション: メンバー追加 + コード使用済み更新
+	memberID := utils.GenerateULID()
+	now := time.Now()
+	if err := ctrl.db.Transaction(func(tx *gorm.DB) error {
+		member := models.TeamMember{
+			ID:     memberID,
+			TeamID: inviteCode.TeamID,
+			UserID: uid,
+			Role:   "member",
+		}
+		if err := tx.Create(&member).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&inviteCode).Updates(map[string]interface{}{
+			"used_by": uid,
+			"used_at": now,
+		}).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "join_failed",
+			Message: "チームへの参加に失敗しました",
+		})
+	}
+
+	// レスポンス構築
+	var team models.Team
+	ctrl.db.First(&team, "id = ?", inviteCode.TeamID)
+
+	var members []models.TeamMember
+	ctrl.db.Preload("User").Where("team_id = ?", team.ID).Find(&members)
+
+	teamReady := len(members) >= 3
+
+	return c.JSON(http.StatusOK, response.JoinTeamResponse{
+		Team:      response.NewTeamResponse(team, members),
+		TeamReady: teamReady,
+	})
 }

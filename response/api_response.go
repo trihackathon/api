@@ -1,5 +1,49 @@
 package response
 
+import (
+	"time"
+
+	"github.com/trihackathon/api/models"
+)
+
+// NewTeamResponse TeamモデルからTeamResponseを構築する
+func NewTeamResponse(team models.Team, members []models.TeamMember) TeamResponse {
+	memberResponses := make([]TeamMemberResponse, len(members))
+	for i, m := range members {
+		name := m.UserID
+		if m.User.Name != "" {
+			name = m.User.Name
+		}
+		memberResponses[i] = TeamMemberResponse{
+			UserID:   m.UserID,
+			Name:     name,
+			Role:     m.Role,
+			JoinedAt: m.JoinedAt.Format(time.RFC3339),
+		}
+	}
+
+	var startedAt *string
+	if team.StartedAt != nil {
+		s := team.StartedAt.Format(time.RFC3339)
+		startedAt = &s
+	}
+
+	return TeamResponse{
+		ID:           team.ID,
+		Name:         team.Name,
+		ExerciseType: team.ExerciseType,
+		Strictness:   team.Strictness,
+		Status:       team.Status,
+		MaxHP:        team.MaxHP,
+		CurrentHP:    team.CurrentHP,
+		CurrentWeek:  team.CurrentWeek,
+		StartedAt:    startedAt,
+		Members:      memberResponses,
+		CreatedAt:    team.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    team.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
 // TeamMemberResponse チームメンバーレスポンス
 type TeamMemberResponse struct {
 	UserID   string `json:"user_id" example:"firebaseUID123"`
