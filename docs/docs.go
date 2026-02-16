@@ -1578,6 +1578,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 5
                 },
+                "client_id": {
+                    "description": "PWA側で生成したユニークID（オプション）",
+                    "type": "string",
+                    "example": "uuid-v4-here"
+                },
                 "latitude": {
                     "type": "number",
                     "example": 35.6812
