@@ -6,13 +6,14 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/trihackathon/api/adapter"
 	"github.com/trihackathon/api/controller"
 	_ "github.com/trihackathon/api/docs" // Swagger docs
 	"github.com/trihackathon/api/driver"
-	"github.com/trihackathon/api/middleware"
+	customMiddleware "github.com/trihackathon/api/middleware"
 )
 
 // @title Trihackathon API
@@ -31,6 +32,13 @@ func main() {
 		// log.Printf("Warning: .env file not found: %v", err)
 	}
 	e := echo.New()
+
+	// CORSミドルウェアの設定
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"}, // 本番環境では適切なオリジンを指定すべき
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+	}))
 
 	// DB接続
 	db := driver.NewDB()
@@ -59,7 +67,7 @@ func main() {
 
 	// 認証必須のルートグループ
 	api := e.Group("/api")
-	api.Use(middleware.FirebaseAuth(fa))
+	api.Use(customMiddleware.FirebaseAuth(fa))
 
 	// ユーザー API
 	api.GET("/users/me", userController.GetMe)
