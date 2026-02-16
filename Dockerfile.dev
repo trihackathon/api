@@ -1,7 +1,8 @@
-FROM golang:1.25.6
+FROM golang:1.25
 
 WORKDIR /app
 
+# 開発ツールのインストール
 RUN go install github.com/air-verse/air@latest
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 RUN go install go.uber.org/mock/mockgen@latest
@@ -15,4 +16,5 @@ COPY . .
 
 EXPOSE 8080
 
-RUN go mod tidy
+# devcontainerではシェルを保持
+CMD ["/bin/bash"]
