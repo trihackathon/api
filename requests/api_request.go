@@ -33,6 +33,7 @@ type FinishRunningRequest struct {
 
 // GPSPointRequest GPSポイント
 type GPSPointRequest struct {
+	ClientID  *string `json:"client_id" example:"uuid-v4-here"` // PWA側で生成したユニークID（オプション）
 	Latitude  float64 `json:"latitude" example:"35.6812"`
 	Longitude float64 `json:"longitude" example:"139.7671"`
 	Accuracy  float64 `json:"accuracy" example:"5.0"`
