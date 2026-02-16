@@ -20,8 +20,12 @@ func NewDB() *gorm.DB {
 		log.Fatalf("DB接続エラー: %v", err)
 	}
 
-	// AutoMigrate
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	// AutoMigrate (GPS機能のみ)
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Activity{},
+		&models.GPSPoint{},
+	); err != nil {
 		log.Fatalf("マイグレーションエラー: %v", err)
 	}
 
