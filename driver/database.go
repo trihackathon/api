@@ -27,6 +27,8 @@ func NewDB() *gorm.DB {
 		&models.Team{},
 		&models.TeamMember{},
 		&models.InviteCode{},
+		&models.Goal{},
+		&models.WeeklyEvaluation{},
 	); err != nil {
 		log.Fatalf("マイグレーションエラー: %v", err)
 	}

@@ -139,14 +139,6 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 		})
 	}
 
-	// 使用済みチェック
-	if inviteCode.UsedBy != nil {
-		return c.JSON(http.StatusGone, response.ErrorResponse{
-			Error:   "code_used",
-			Message: "招待コードは既に使用されています",
-		})
-	}
-
 	// 既にアクティブチーム所属チェック
 	var existingMember models.TeamMember
 	err := ctrl.db.
@@ -170,27 +162,15 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 		})
 	}
 
-	// トランザクション: メンバー追加 + コード使用済み更新
+	// メンバー追加
 	memberID := utils.GenerateULID()
-	now := time.Now()
-	if err := ctrl.db.Transaction(func(tx *gorm.DB) error {
-		member := models.TeamMember{
-			ID:     memberID,
-			TeamID: inviteCode.TeamID,
-			UserID: uid,
-			Role:   "member",
-		}
-		if err := tx.Create(&member).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&inviteCode).Updates(map[string]interface{}{
-			"used_by": uid,
-			"used_at": now,
-		}).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	member := models.TeamMember{
+		ID:     memberID,
+		TeamID: inviteCode.TeamID,
+		UserID: uid,
+		Role:   "member",
+	}
+	if err := ctrl.db.Create(&member).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "join_failed",
 			Message: "チームへの参加に失敗しました",
