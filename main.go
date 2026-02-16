@@ -49,9 +49,12 @@ func main() {
 	// Firebase初期化
 	fa := adapter.NewFirebaseAdapter()
 
+	// R2初期化
+	r2 := adapter.NewR2Adapter()
+
 	// コントローラー初期化
 	debugController := controller.NewDebugController(fa)
-	userController := controller.NewUserController(db)
+	userController := controller.NewUserController(db, r2)
 	teamController := controller.NewTeamController(db)
 	inviteController := controller.NewInviteController(db)
 	goalController := controller.NewGoalController(db)
