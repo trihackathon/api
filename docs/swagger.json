@@ -1,9 +1,1209 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Trihackathon API Server",
+        "title": "Trihackathon API",
+        "contact": {},
+        "version": "1.0"
     },
+    "host": "localhost:8080",
+    "basePath": "/",
     "paths": {
+        "/api/activities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "自分のアクティビティ一覧を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "自分のアクティビティ一覧",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.ActivityResponse"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/gym/checkin": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ジムにチェックインする。現在位置とジムの距離を検証し、radius_m以内であることを確認。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gym"
+                ],
+                "summary": "ジムチェックイン",
+                "parameters": [
+                    {
+                        "description": "チェックイン情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.GymCheckinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/gym/{activityId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "指定したジムアクティビティの詳細情報を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gym"
+                ],
+                "summary": "ジム記録詳細",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "アクティビティID",
+                        "name": "activityId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/gym/{activityId}/checkout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ジムからチェックアウトする。duration_minをended_at - started_atから算出。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gym"
+                ],
+                "summary": "ジムチェックアウト",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "アクティビティID",
+                        "name": "activityId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "チェックアウト情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.GymCheckoutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/running/start": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ランニングアクティビティを開始する。同時に進行中にできるアクティビティは1つのみ。チームがactive状態かつexercise_typeがrunningの場合のみ。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities-running"
+                ],
+                "summary": "ランニング開始",
+                "parameters": [
+                    {
+                        "description": "開始地点情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.StartRunningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/running/{activityId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "指定したランニングアクティビティの詳細情報（GPSポイント含む）を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities-running"
+                ],
+                "summary": "ランニング記録詳細",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "アクティビティID",
+                        "name": "activityId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/running/{activityId}/finish": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ランニングアクティビティを完了する。GPSポイントから総移動距離を再計算しdistance_kmを確定。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities-running"
+                ],
+                "summary": "ランニング完了",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "アクティビティID",
+                        "name": "activityId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "終了地点情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.FinishRunningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ActivityResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/activities/running/{activityId}/gps": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "バックグラウンドで蓄積したGPSデータをバッチ送信する。精度が50mを超えるポイントは距離計算から除外（保存はする）。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities-running"
+                ],
+                "summary": "GPSポイント送信（バッチ）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "アクティビティID",
+                        "name": "activityId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "GPSポイントデータ",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.SendGPSPointsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.SendGPSPointsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/gym-locations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ユーザーが登録したジムの一覧を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gym"
+                ],
+                "summary": "登録ジム一覧",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.GymLocationResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "ジムの位置情報を登録する。ジオフェンス半径のデフォルトは100m。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gym"
+                ],
+                "summary": "ジム位置登録",
+                "parameters": [
+                    {
+                        "description": "ジム位置情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateGymLocationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.GymLocationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/gym-locations/{locationId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "登録したジムの位置情報を削除する。所有者のみ削除可能。",
+                "tags": [
+                    "gym"
+                ],
+                "summary": "ジム位置削除",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ジム位置ID",
+                        "name": "locationId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/predictions/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "過去のアクティビティデータから曜日別の成功率を算出し、危険な曜日を警告する。成功率40%未満の曜日を「危険」と判定。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "predictions"
+                ],
+                "summary": "自分の失敗予測",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.PredictionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームを作成し、作成者をリーダーとしてメンバーに追加する。1ユーザーが同時に参加できるアクティブチームは1つのみ。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "チーム作成",
+                "parameters": [
+                    {
+                        "description": "チーム情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateTeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/join": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "招待コードを使用してチームに参加する。3人揃った場合team_readyがtrueになる。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invite"
+                ],
+                "summary": "招待コードでチーム参加",
+                "parameters": [
+                    {
+                        "description": "招待コード",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.JoinTeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JoinTeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "自分が所属するアクティブなチームを返す",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "自分のチーム取得",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "指定したチームの詳細情報を取得する。チームメンバーのみアクセス可能。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "チーム詳細取得",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/activities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チーム全体のアクティビティ一覧を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "チーム全体のアクティビティ一覧",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.ActivityResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/evaluations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームの週次評価一覧を取得する。weekクエリパラメータで特定の週のみ取得可能。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "evaluations"
+                ],
+                "summary": "週次評価一覧",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "特定の週番号",
+                        "name": "week",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.WeeklyEvaluationResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/evaluations/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "現在の週のリアルタイム進捗を返す（まだ週次評価が確定していない状態）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "evaluations"
+                ],
+                "summary": "今週の進捗状況",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.CurrentWeekEvaluationResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/goal": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームの目標を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "goals"
+                ],
+                "summary": "目標取得",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.GoalResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームの目標を更新する。リーダーのみ更新可能。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "goals"
+                ],
+                "summary": "目標更新",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新する目標情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateGoalRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.GoalResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームの目標を設定する。リーダーのみ設定可能。チームメンバーが3人揃った状態でのみ設定可能。目標設定完了でチームstatusをactiveに変更。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "goals"
+                ],
+                "summary": "目標設定",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "目標情報",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateGoalRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.GoalResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "6桁の英数大文字の招待コードを生成する。有効期限は24時間。チーム状態がformingかつメンバー3人未満の場合のみ発行可能。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invite"
+                ],
+                "summary": "招待コード生成",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.InviteCodeResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{teamId}/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "チームのHP、ステータス、HP履歴、メンバーの進捗状況を取得する",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team-status"
+                ],
+                "summary": "チームHP・状態取得",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "チームID",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamStatusResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/me": {
             "get": {
                 "security": [
@@ -230,6 +1430,61 @@
         }
     },
     "definitions": {
+        "requests.CreateGoalRequest": {
+            "type": "object",
+            "properties": {
+                "target_distance_km": {
+                    "type": "number",
+                    "example": 15
+                },
+                "target_min_duration_min": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "target_visits_per_week": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "requests.CreateGymLocationRequest": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "example": 35.658
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7016
+                },
+                "name": {
+                    "type": "string",
+                    "example": "エニタイムフィットネス 渋谷店"
+                },
+                "radius_m": {
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
+        "requests.CreateTeamRequest": {
+            "type": "object",
+            "properties": {
+                "exercise_type": {
+                    "type": "string",
+                    "example": "running"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "朝ランチーム"
+                },
+                "strictness": {
+                    "type": "string",
+                    "example": "normal"
+                }
+            }
+        },
         "requests.CreateUserRequest": {
             "type": "object",
             "properties": {
@@ -251,6 +1506,107 @@
                 }
             }
         },
+        "requests.FinishRunningRequest": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6815
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7675
+                }
+            }
+        },
+        "requests.GPSPointRequest": {
+            "type": "object",
+            "properties": {
+                "accuracy": {
+                    "type": "number",
+                    "example": 5
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6812
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7671
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2026-02-10T07:01:00Z"
+                }
+            }
+        },
+        "requests.GymCheckinRequest": {
+            "type": "object",
+            "properties": {
+                "auto_detected": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "gym_location_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00004"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6581
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7017
+                }
+            }
+        },
+        "requests.GymCheckoutRequest": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6581
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7017
+                }
+            }
+        },
+        "requests.JoinTeamRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "A3K9X2"
+                }
+            }
+        },
+        "requests.SendGPSPointsRequest": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.GPSPointRequest"
+                    }
+                }
+            }
+        },
+        "requests.StartRunningRequest": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6812362
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7671248
+                }
+            }
+        },
         "requests.UpdateUserRequest": {
             "type": "object",
             "properties": {
@@ -261,6 +1617,165 @@
                 "name": {
                     "type": "string",
                     "example": "山田太郎"
+                }
+            }
+        },
+        "response.ActivityResponse": {
+            "type": "object",
+            "properties": {
+                "auto_detected": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-02-10T07:00:00Z"
+                },
+                "distance_km": {
+                    "type": "number",
+                    "example": 5.234
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 35
+                },
+                "ended_at": {
+                    "type": "string"
+                },
+                "exercise_type": {
+                    "type": "string",
+                    "example": "running"
+                },
+                "gps_points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.GPSPointResponse"
+                    }
+                },
+                "gym_location_id": {
+                    "type": "string"
+                },
+                "gym_location_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00003"
+                },
+                "started_at": {
+                    "type": "string",
+                    "example": "2026-02-10T07:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "in_progress"
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-02-10T07:00:00Z"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                }
+            }
+        },
+        "response.CurrentWeekEvaluationResponse": {
+            "type": "object",
+            "properties": {
+                "days_remaining": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.CurrentWeekMemberProgress"
+                    }
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "week_end": {
+                    "type": "string",
+                    "example": "2026-02-09T23:59:59Z"
+                },
+                "week_number": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "week_start": {
+                    "type": "string",
+                    "example": "2026-02-03T00:00:00Z"
+                }
+            }
+        },
+        "response.CurrentWeekMemberProgress": {
+            "type": "object",
+            "properties": {
+                "activities_this_week": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.WeekActivitySummary"
+                    }
+                },
+                "on_track": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "target_progress_percent": {
+                    "type": "number",
+                    "example": 83.3
+                },
+                "total_distance_km": {
+                    "type": "number",
+                    "example": 12.5
+                },
+                "total_duration_min": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "total_visits": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "山田太郎"
+                }
+            }
+        },
+        "response.DailyStat": {
+            "type": "object",
+            "properties": {
+                "activity_count": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "day_name": {
+                    "type": "string",
+                    "example": "日曜日"
+                },
+                "day_of_week": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "is_danger": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "success_rate": {
+                    "type": "number",
+                    "example": 0.75
                 }
             }
         },
@@ -298,6 +1813,349 @@
                 }
             }
         },
+        "response.GPSPointResponse": {
+            "type": "object",
+            "properties": {
+                "accuracy": {
+                    "type": "number",
+                    "example": 5
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 35.6812
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7671
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2026-02-10T07:00:00Z"
+                }
+            }
+        },
+        "response.GoalResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                },
+                "exercise_type": {
+                    "type": "string",
+                    "example": "running"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00002"
+                },
+                "target_distance_km": {
+                    "type": "number",
+                    "example": 15
+                },
+                "target_min_duration_min": {
+                    "type": "integer"
+                },
+                "target_visits_per_week": {
+                    "type": "integer"
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                }
+            }
+        },
+        "response.GymLocationResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00004"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 35.658
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 139.7016
+                },
+                "name": {
+                    "type": "string",
+                    "example": "エニタイムフィットネス 渋谷店"
+                },
+                "radius_m": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                }
+            }
+        },
+        "response.HPChangeEntry": {
+            "type": "object",
+            "properties": {
+                "hp_change": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "target_met": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "山田太郎"
+                }
+            }
+        },
+        "response.InviteCodeResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "A3K9X2"
+                },
+                "current_member_count": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "exercise_type": {
+                    "type": "string",
+                    "example": "running"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-02-11T09:00:00Z"
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "team_name": {
+                    "type": "string",
+                    "example": "朝ランチーム"
+                }
+            }
+        },
+        "response.JoinTeamResponse": {
+            "type": "object",
+            "properties": {
+                "team": {
+                    "$ref": "#/definitions/response.TeamResponse"
+                },
+                "team_ready": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "response.MemberProgress": {
+            "type": "object",
+            "properties": {
+                "current_week_distance_km": {
+                    "type": "number",
+                    "example": 12.5
+                },
+                "current_week_duration_min": {
+                    "type": "integer"
+                },
+                "current_week_visits": {
+                    "type": "integer"
+                },
+                "target_progress_percent": {
+                    "type": "number",
+                    "example": 83.3
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "山田太郎"
+                }
+            }
+        },
+        "response.PredictionResponse": {
+            "type": "object",
+            "properties": {
+                "analysis_period_weeks": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "daily_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.DailyStat"
+                    }
+                },
+                "danger_days": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "recommendation": {
+                    "type": "string",
+                    "example": "月曜日が危険です。月曜日は運動をサボりやすい傾向があります。"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                }
+            }
+        },
+        "response.SendGPSPointsResponse": {
+            "type": "object",
+            "properties": {
+                "current_distance_km": {
+                    "type": "number",
+                    "example": 3.456
+                },
+                "saved_count": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "response.TeamMemberResponse": {
+            "type": "object",
+            "properties": {
+                "joined_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "山田太郎"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "leader"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                }
+            }
+        },
+        "response.TeamResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                },
+                "current_hp": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "current_week": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "exercise_type": {
+                    "type": "string",
+                    "example": "running"
+                },
+                "goal": {
+                    "$ref": "#/definitions/response.GoalResponse"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "max_hp": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.TeamMemberResponse"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "朝ランチーム"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "forming"
+                },
+                "strictness": {
+                    "type": "string",
+                    "example": "normal"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-02-10T09:00:00Z"
+                }
+            }
+        },
+        "response.TeamStatusResponse": {
+            "type": "object",
+            "properties": {
+                "current_hp": {
+                    "type": "integer",
+                    "example": 85
+                },
+                "current_week": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "hp_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.WeekHPHistory"
+                    }
+                },
+                "max_hp": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "members_progress": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.MemberProgress"
+                    }
+                },
+                "started_at": {
+                    "type": "string",
+                    "example": "2026-01-20T00:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                }
+            }
+        },
         "response.UserResponse": {
             "type": "object",
             "properties": {
@@ -320,6 +2178,99 @@
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-01T00:00:00Z"
+                }
+            }
+        },
+        "response.WeekActivitySummary": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2026-02-04"
+                },
+                "distance_km": {
+                    "type": "number",
+                    "example": 5.2
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 35
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00003"
+                }
+            }
+        },
+        "response.WeekHPHistory": {
+            "type": "object",
+            "properties": {
+                "changes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.HPChangeEntry"
+                    }
+                },
+                "hp_end": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "hp_start": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "week": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "response.WeeklyEvaluationResponse": {
+            "type": "object",
+            "properties": {
+                "evaluated_at": {
+                    "type": "string",
+                    "example": "2026-01-27T00:00:00Z"
+                },
+                "hp_change": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00010"
+                },
+                "target_met": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "team_id": {
+                    "type": "string",
+                    "example": "01JARQ3KEXAMPLE00001"
+                },
+                "total_distance_km": {
+                    "type": "number",
+                    "example": 16.5
+                },
+                "total_duration_min": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "total_visits": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "firebaseUID123"
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "山田太郎"
+                },
+                "week_number": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         }

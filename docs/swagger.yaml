@@ -1,4 +1,44 @@
+basePath: /
 definitions:
+  requests.CreateGoalRequest:
+    properties:
+      target_distance_km:
+        example: 15
+        type: number
+      target_min_duration_min:
+        example: 60
+        type: integer
+      target_visits_per_week:
+        example: 3
+        type: integer
+    type: object
+  requests.CreateGymLocationRequest:
+    properties:
+      latitude:
+        example: 35.658
+        type: number
+      longitude:
+        example: 139.7016
+        type: number
+      name:
+        example: エニタイムフィットネス 渋谷店
+        type: string
+      radius_m:
+        example: 100
+        type: integer
+    type: object
+  requests.CreateTeamRequest:
+    properties:
+      exercise_type:
+        example: running
+        type: string
+      name:
+        example: 朝ランチーム
+        type: string
+      strictness:
+        example: normal
+        type: string
+    type: object
   requests.CreateUserRequest:
     properties:
       age:
@@ -13,6 +53,76 @@ definitions:
       message:
         type: string
     type: object
+  requests.FinishRunningRequest:
+    properties:
+      latitude:
+        example: 35.6815
+        type: number
+      longitude:
+        example: 139.7675
+        type: number
+    type: object
+  requests.GPSPointRequest:
+    properties:
+      accuracy:
+        example: 5
+        type: number
+      latitude:
+        example: 35.6812
+        type: number
+      longitude:
+        example: 139.7671
+        type: number
+      timestamp:
+        example: "2026-02-10T07:01:00Z"
+        type: string
+    type: object
+  requests.GymCheckinRequest:
+    properties:
+      auto_detected:
+        example: false
+        type: boolean
+      gym_location_id:
+        example: 01JARQ3KEXAMPLE00004
+        type: string
+      latitude:
+        example: 35.6581
+        type: number
+      longitude:
+        example: 139.7017
+        type: number
+    type: object
+  requests.GymCheckoutRequest:
+    properties:
+      latitude:
+        example: 35.6581
+        type: number
+      longitude:
+        example: 139.7017
+        type: number
+    type: object
+  requests.JoinTeamRequest:
+    properties:
+      code:
+        example: A3K9X2
+        type: string
+    type: object
+  requests.SendGPSPointsRequest:
+    properties:
+      points:
+        items:
+          $ref: '#/definitions/requests.GPSPointRequest'
+        type: array
+    type: object
+  requests.StartRunningRequest:
+    properties:
+      latitude:
+        example: 35.6812362
+        type: number
+      longitude:
+        example: 139.7671248
+        type: number
+    type: object
   requests.UpdateUserRequest:
     properties:
       age:
@@ -21,6 +131,120 @@ definitions:
       name:
         example: 山田太郎
         type: string
+    type: object
+  response.ActivityResponse:
+    properties:
+      auto_detected:
+        example: false
+        type: boolean
+      created_at:
+        example: "2026-02-10T07:00:00Z"
+        type: string
+      distance_km:
+        example: 5.234
+        type: number
+      duration_min:
+        example: 35
+        type: integer
+      ended_at:
+        type: string
+      exercise_type:
+        example: running
+        type: string
+      gps_points:
+        items:
+          $ref: '#/definitions/response.GPSPointResponse'
+        type: array
+      gym_location_id:
+        type: string
+      gym_location_name:
+        type: string
+      id:
+        example: 01JARQ3KEXAMPLE00003
+        type: string
+      started_at:
+        example: "2026-02-10T07:00:00Z"
+        type: string
+      status:
+        example: in_progress
+        type: string
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      updated_at:
+        example: "2026-02-10T07:00:00Z"
+        type: string
+      user_id:
+        example: firebaseUID123
+        type: string
+    type: object
+  response.CurrentWeekEvaluationResponse:
+    properties:
+      days_remaining:
+        example: 0
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/response.CurrentWeekMemberProgress'
+        type: array
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      week_end:
+        example: "2026-02-09T23:59:59Z"
+        type: string
+      week_number:
+        example: 3
+        type: integer
+      week_start:
+        example: "2026-02-03T00:00:00Z"
+        type: string
+    type: object
+  response.CurrentWeekMemberProgress:
+    properties:
+      activities_this_week:
+        items:
+          $ref: '#/definitions/response.WeekActivitySummary'
+        type: array
+      on_track:
+        example: true
+        type: boolean
+      target_progress_percent:
+        example: 83.3
+        type: number
+      total_distance_km:
+        example: 12.5
+        type: number
+      total_duration_min:
+        example: 0
+        type: integer
+      total_visits:
+        example: 0
+        type: integer
+      user_id:
+        example: firebaseUID123
+        type: string
+      user_name:
+        example: 山田太郎
+        type: string
+    type: object
+  response.DailyStat:
+    properties:
+      activity_count:
+        example: 4
+        type: integer
+      day_name:
+        example: 日曜日
+        type: string
+      day_of_week:
+        example: 0
+        type: integer
+      is_danger:
+        example: false
+        type: boolean
+      success_rate:
+        example: 0.75
+        type: number
     type: object
   response.DebugEchoResponse:
     properties:
@@ -45,6 +269,250 @@ definitions:
         example: エラーが発生しました
         type: string
     type: object
+  response.GPSPointResponse:
+    properties:
+      accuracy:
+        example: 5
+        type: number
+      latitude:
+        example: 35.6812
+        type: number
+      longitude:
+        example: 139.7671
+        type: number
+      timestamp:
+        example: "2026-02-10T07:00:00Z"
+        type: string
+    type: object
+  response.GoalResponse:
+    properties:
+      created_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+      exercise_type:
+        example: running
+        type: string
+      id:
+        example: 01JARQ3KEXAMPLE00002
+        type: string
+      target_distance_km:
+        example: 15
+        type: number
+      target_min_duration_min:
+        type: integer
+      target_visits_per_week:
+        type: integer
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      updated_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+    type: object
+  response.GymLocationResponse:
+    properties:
+      created_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+      id:
+        example: 01JARQ3KEXAMPLE00004
+        type: string
+      latitude:
+        example: 35.658
+        type: number
+      longitude:
+        example: 139.7016
+        type: number
+      name:
+        example: エニタイムフィットネス 渋谷店
+        type: string
+      radius_m:
+        example: 100
+        type: integer
+      updated_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+      user_id:
+        example: firebaseUID123
+        type: string
+    type: object
+  response.HPChangeEntry:
+    properties:
+      hp_change:
+        example: 0
+        type: integer
+      target_met:
+        example: true
+        type: boolean
+      user_id:
+        example: firebaseUID123
+        type: string
+      user_name:
+        example: 山田太郎
+        type: string
+    type: object
+  response.InviteCodeResponse:
+    properties:
+      code:
+        example: A3K9X2
+        type: string
+      current_member_count:
+        example: 1
+        type: integer
+      exercise_type:
+        example: running
+        type: string
+      expires_at:
+        example: "2026-02-11T09:00:00Z"
+        type: string
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      team_name:
+        example: 朝ランチーム
+        type: string
+    type: object
+  response.JoinTeamResponse:
+    properties:
+      team:
+        $ref: '#/definitions/response.TeamResponse'
+      team_ready:
+        example: false
+        type: boolean
+    type: object
+  response.MemberProgress:
+    properties:
+      current_week_distance_km:
+        example: 12.5
+        type: number
+      current_week_duration_min:
+        type: integer
+      current_week_visits:
+        type: integer
+      target_progress_percent:
+        example: 83.3
+        type: number
+      user_id:
+        example: firebaseUID123
+        type: string
+      user_name:
+        example: 山田太郎
+        type: string
+    type: object
+  response.PredictionResponse:
+    properties:
+      analysis_period_weeks:
+        example: 4
+        type: integer
+      daily_stats:
+        items:
+          $ref: '#/definitions/response.DailyStat'
+        type: array
+      danger_days:
+        items:
+          type: string
+        type: array
+      recommendation:
+        example: 月曜日が危険です。月曜日は運動をサボりやすい傾向があります。
+        type: string
+      user_id:
+        example: firebaseUID123
+        type: string
+    type: object
+  response.SendGPSPointsResponse:
+    properties:
+      current_distance_km:
+        example: 3.456
+        type: number
+      saved_count:
+        example: 2
+        type: integer
+    type: object
+  response.TeamMemberResponse:
+    properties:
+      joined_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+      name:
+        example: 山田太郎
+        type: string
+      role:
+        example: leader
+        type: string
+      user_id:
+        example: firebaseUID123
+        type: string
+    type: object
+  response.TeamResponse:
+    properties:
+      created_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+      current_hp:
+        example: 100
+        type: integer
+      current_week:
+        example: 0
+        type: integer
+      exercise_type:
+        example: running
+        type: string
+      goal:
+        $ref: '#/definitions/response.GoalResponse'
+      id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      max_hp:
+        example: 100
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/response.TeamMemberResponse'
+        type: array
+      name:
+        example: 朝ランチーム
+        type: string
+      started_at:
+        type: string
+      status:
+        example: forming
+        type: string
+      strictness:
+        example: normal
+        type: string
+      updated_at:
+        example: "2026-02-10T09:00:00Z"
+        type: string
+    type: object
+  response.TeamStatusResponse:
+    properties:
+      current_hp:
+        example: 85
+        type: integer
+      current_week:
+        example: 3
+        type: integer
+      hp_history:
+        items:
+          $ref: '#/definitions/response.WeekHPHistory'
+        type: array
+      max_hp:
+        example: 100
+        type: integer
+      members_progress:
+        items:
+          $ref: '#/definitions/response.MemberProgress'
+        type: array
+      started_at:
+        example: "2026-01-20T00:00:00Z"
+        type: string
+      status:
+        example: active
+        type: string
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+    type: object
   response.UserResponse:
     properties:
       age:
@@ -63,9 +531,836 @@ definitions:
         example: "2024-01-01T00:00:00Z"
         type: string
     type: object
+  response.WeekActivitySummary:
+    properties:
+      date:
+        example: "2026-02-04"
+        type: string
+      distance_km:
+        example: 5.2
+        type: number
+      duration_min:
+        example: 35
+        type: integer
+      id:
+        example: 01JARQ3KEXAMPLE00003
+        type: string
+    type: object
+  response.WeekHPHistory:
+    properties:
+      changes:
+        items:
+          $ref: '#/definitions/response.HPChangeEntry'
+        type: array
+      hp_end:
+        example: 100
+        type: integer
+      hp_start:
+        example: 100
+        type: integer
+      week:
+        example: 1
+        type: integer
+    type: object
+  response.WeeklyEvaluationResponse:
+    properties:
+      evaluated_at:
+        example: "2026-01-27T00:00:00Z"
+        type: string
+      hp_change:
+        example: 0
+        type: integer
+      id:
+        example: 01JARQ3KEXAMPLE00010
+        type: string
+      target_met:
+        example: true
+        type: boolean
+      team_id:
+        example: 01JARQ3KEXAMPLE00001
+        type: string
+      total_distance_km:
+        example: 16.5
+        type: number
+      total_duration_min:
+        example: 0
+        type: integer
+      total_visits:
+        example: 0
+        type: integer
+      user_id:
+        example: firebaseUID123
+        type: string
+      user_name:
+        example: 山田太郎
+        type: string
+      week_number:
+        example: 1
+        type: integer
+    type: object
+host: localhost:8080
 info:
   contact: {}
+  description: Trihackathon API Server
+  title: Trihackathon API
+  version: "1.0"
 paths:
+  /api/activities:
+    get:
+      description: 自分のアクティビティ一覧を取得する
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.ActivityResponse'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 自分のアクティビティ一覧
+      tags:
+      - activities
+  /api/activities/gym/{activityId}:
+    get:
+      description: 指定したジムアクティビティの詳細情報を取得する
+      parameters:
+      - description: アクティビティID
+        in: path
+        name: activityId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ジム記録詳細
+      tags:
+      - gym
+  /api/activities/gym/{activityId}/checkout:
+    post:
+      consumes:
+      - application/json
+      description: ジムからチェックアウトする。duration_minをended_at - started_atから算出。
+      parameters:
+      - description: アクティビティID
+        in: path
+        name: activityId
+        required: true
+        type: string
+      - description: チェックアウト情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.GymCheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ジムチェックアウト
+      tags:
+      - gym
+  /api/activities/gym/checkin:
+    post:
+      consumes:
+      - application/json
+      description: ジムにチェックインする。現在位置とジムの距離を検証し、radius_m以内であることを確認。
+      parameters:
+      - description: チェックイン情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.GymCheckinRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ジムチェックイン
+      tags:
+      - gym
+  /api/activities/running/{activityId}:
+    get:
+      description: 指定したランニングアクティビティの詳細情報（GPSポイント含む）を取得する
+      parameters:
+      - description: アクティビティID
+        in: path
+        name: activityId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ランニング記録詳細
+      tags:
+      - activities-running
+  /api/activities/running/{activityId}/finish:
+    post:
+      consumes:
+      - application/json
+      description: ランニングアクティビティを完了する。GPSポイントから総移動距離を再計算しdistance_kmを確定。
+      parameters:
+      - description: アクティビティID
+        in: path
+        name: activityId
+        required: true
+        type: string
+      - description: 終了地点情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.FinishRunningRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ランニング完了
+      tags:
+      - activities-running
+  /api/activities/running/{activityId}/gps:
+    post:
+      consumes:
+      - application/json
+      description: バックグラウンドで蓄積したGPSデータをバッチ送信する。精度が50mを超えるポイントは距離計算から除外（保存はする）。
+      parameters:
+      - description: アクティビティID
+        in: path
+        name: activityId
+        required: true
+        type: string
+      - description: GPSポイントデータ
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.SendGPSPointsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SendGPSPointsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: GPSポイント送信（バッチ）
+      tags:
+      - activities-running
+  /api/activities/running/start:
+    post:
+      consumes:
+      - application/json
+      description: ランニングアクティビティを開始する。同時に進行中にできるアクティビティは1つのみ。チームがactive状態かつexercise_typeがrunningの場合のみ。
+      parameters:
+      - description: 開始地点情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.StartRunningRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.ActivityResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ランニング開始
+      tags:
+      - activities-running
+  /api/gym-locations:
+    get:
+      description: ユーザーが登録したジムの一覧を取得する
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.GymLocationResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 登録ジム一覧
+      tags:
+      - gym
+    post:
+      consumes:
+      - application/json
+      description: ジムの位置情報を登録する。ジオフェンス半径のデフォルトは100m。
+      parameters:
+      - description: ジム位置情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateGymLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.GymLocationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ジム位置登録
+      tags:
+      - gym
+  /api/gym-locations/{locationId}:
+    delete:
+      description: 登録したジムの位置情報を削除する。所有者のみ削除可能。
+      parameters:
+      - description: ジム位置ID
+        in: path
+        name: locationId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ジム位置削除
+      tags:
+      - gym
+  /api/predictions/me:
+    get:
+      description: 過去のアクティビティデータから曜日別の成功率を算出し、危険な曜日を警告する。成功率40%未満の曜日を「危険」と判定。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PredictionResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 自分の失敗予測
+      tags:
+      - predictions
+  /api/teams:
+    post:
+      consumes:
+      - application/json
+      description: チームを作成し、作成者をリーダーとしてメンバーに追加する。1ユーザーが同時に参加できるアクティブチームは1つのみ。
+      parameters:
+      - description: チーム情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: チーム作成
+      tags:
+      - teams
+  /api/teams/{teamId}:
+    get:
+      description: 指定したチームの詳細情報を取得する。チームメンバーのみアクセス可能。
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TeamResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: チーム詳細取得
+      tags:
+      - teams
+  /api/teams/{teamId}/activities:
+    get:
+      description: チーム全体のアクティビティ一覧を取得する
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.ActivityResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: チーム全体のアクティビティ一覧
+      tags:
+      - activities
+  /api/teams/{teamId}/evaluations:
+    get:
+      description: チームの週次評価一覧を取得する。weekクエリパラメータで特定の週のみ取得可能。
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      - description: 特定の週番号
+        in: query
+        name: week
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.WeeklyEvaluationResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 週次評価一覧
+      tags:
+      - evaluations
+  /api/teams/{teamId}/evaluations/current:
+    get:
+      description: 現在の週のリアルタイム進捗を返す（まだ週次評価が確定していない状態）
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.CurrentWeekEvaluationResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 今週の進捗状況
+      tags:
+      - evaluations
+  /api/teams/{teamId}/goal:
+    get:
+      description: チームの目標を取得する
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.GoalResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 目標取得
+      tags:
+      - goals
+    post:
+      consumes:
+      - application/json
+      description: チームの目標を設定する。リーダーのみ設定可能。チームメンバーが3人揃った状態でのみ設定可能。目標設定完了でチームstatusをactiveに変更。
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      - description: 目標情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateGoalRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.GoalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 目標設定
+      tags:
+      - goals
+    put:
+      consumes:
+      - application/json
+      description: チームの目標を更新する。リーダーのみ更新可能。
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      - description: 更新する目標情報
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateGoalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.GoalResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 目標更新
+      tags:
+      - goals
+  /api/teams/{teamId}/invite:
+    post:
+      description: 6桁の英数大文字の招待コードを生成する。有効期限は24時間。チーム状態がformingかつメンバー3人未満の場合のみ発行可能。
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.InviteCodeResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 招待コード生成
+      tags:
+      - invite
+  /api/teams/{teamId}/status:
+    get:
+      description: チームのHP、ステータス、HP履歴、メンバーの進捗状況を取得する
+      parameters:
+      - description: チームID
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TeamStatusResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: チームHP・状態取得
+      tags:
+      - team-status
+  /api/teams/join:
+    post:
+      consumes:
+      - application/json
+      description: 招待コードを使用してチームに参加する。3人揃った場合team_readyがtrueになる。
+      parameters:
+      - description: 招待コード
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.JoinTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JoinTeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 招待コードでチーム参加
+      tags:
+      - invite
+  /api/teams/me:
+    get:
+      description: 自分が所属するアクティブなチームを返す
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TeamResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 自分のチーム取得
+      tags:
+      - teams
   /api/users/me:
     get:
       produces:
