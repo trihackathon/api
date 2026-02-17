@@ -96,7 +96,8 @@ func (ctrl *PredictionController) GetMyPrediction(c echo.Context) error {
 		if dayTotal[dow] > 0 {
 			successRate = float64(dayActivity[dow]) / float64(dayTotal[dow])
 		}
-		isDanger := successRate < 0.4
+		// データ不足の場合（アクティビティ数が2未満）は危険扱いしない
+		isDanger := dayActivity[dow] >= 2 && successRate < 0.4
 		if isDanger {
 			dangerDays = append(dangerDays, dayNames[dow])
 		}
