@@ -1389,6 +1389,48 @@
                 }
             }
         },
+        "/cron/weekly-evaluation": {
+            "post": {
+                "description": "全activeチームの週次評価を実行し、HP更新・disbanded処理を行う",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cron"
+                ],
+                "summary": "週次評価実行",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cronシークレットキー",
+                        "name": "X-Cron-Secret",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/debug/echo": {
             "post": {
                 "tags": [
