@@ -447,6 +447,10 @@ func (ctrl *ActivityController) GetTeamActivities(c echo.Context) error {
 
 	var activities []models.Activity
 	if err := ctrl.db.Where("team_id = ?", teamId).
+		Preload("User").
+		Preload("GPSPoints", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		}).
 		Order("started_at DESC").
 		Find(&activities).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
@@ -457,7 +461,177 @@ func (ctrl *ActivityController) GetTeamActivities(c echo.Context) error {
 
 	responses := make([]response.ActivityResponse, len(activities))
 	for i, activity := range activities {
-		responses[i] = toActivityResponse(activity, nil)
+		responses[i] = toActivityResponse(activity, activity.GPSPoints)
+	}
+
+	return c.JSON(http.StatusOK, responses)
+}
+
+// PostActivityReview アクティビティレビュー投稿
+func (ctrl *ActivityController) PostActivityReview(c echo.Context) error {
+	uid := c.Get("uid").(string)
+	activityId := c.Param("activityId")
+
+	req := new(requests.PostActivityReviewRequest)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_request",
+			Message: "リクエストの形式が不正です",
+		})
+	}
+
+	if req.Status != "approved" && req.Status != "rejected" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_status",
+			Message: "statusは 'approved' または 'rejected' を指定してください",
+		})
+	}
+
+	// アクティビティを取得
+	var activity models.Activity
+	if err := ctrl.db.First(&activity, "id = ?", activityId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "activity_not_found",
+			Message: "アクティビティが見つかりません",
+		})
+	}
+
+	// 自分のアクティビティにはレビューできない
+	if activity.UserID == uid {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "cannot_review_own",
+			Message: "自分のアクティビティにはレビューできません",
+		})
+	}
+
+	// チームメンバー確認
+	if activity.TeamID == nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "no_team",
+			Message: "チームに紐づいていないアクティビティです",
+		})
+	}
+
+	var member models.TeamMember
+	if err := ctrl.db.First(&member, "team_id = ? AND user_id = ?", *activity.TeamID, uid).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "チームのメンバーではありません",
+		})
+	}
+
+	// 既存レビューチェック（あればUPDATE、なければINSERT）
+	var existingReview models.ActivityReview
+	err := ctrl.db.Where("activity_id = ? AND reviewer_id = ?", activityId, uid).First(&existingReview).Error
+
+	if err == nil {
+		// 既存レビューを更新
+		existingReview.Status = req.Status
+		existingReview.Comment = req.Comment
+		if err := ctrl.db.Save(&existingReview).Error; err != nil {
+			return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Error:   "update_failed",
+				Message: "レビューの更新に失敗しました",
+			})
+		}
+	} else {
+		// 新規レビューを作成
+		existingReview = models.ActivityReview{
+			ID:         utils.GenerateULID(),
+			ActivityID: activityId,
+			ReviewerID: uid,
+			Status:     req.Status,
+			Comment:    req.Comment,
+		}
+		if err := ctrl.db.Create(&existingReview).Error; err != nil {
+			return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Error:   "create_failed",
+				Message: "レビューの作成に失敗しました",
+			})
+		}
+	}
+
+	// Activity の review_status を更新
+	if req.Status == "rejected" {
+		ctrl.db.Model(&activity).Update("review_status", "rejected")
+	} else {
+		// approved の場合、他に rejected がなければ approved に
+		var rejectedCount int64
+		ctrl.db.Model(&models.ActivityReview{}).
+			Where("activity_id = ? AND status = ?", activityId, "rejected").
+			Count(&rejectedCount)
+		if rejectedCount == 0 {
+			ctrl.db.Model(&activity).Update("review_status", "approved")
+		}
+	}
+
+	// レスポンス用にレビュアー情報を取得
+	var reviewer models.User
+	ctrl.db.First(&reviewer, "id = ?", uid)
+
+	return c.JSON(http.StatusOK, response.ActivityReviewResponse{
+		ID:           existingReview.ID,
+		ActivityID:   existingReview.ActivityID,
+		ReviewerID:   existingReview.ReviewerID,
+		ReviewerName: reviewer.Name,
+		Status:       existingReview.Status,
+		Comment:      existingReview.Comment,
+		CreatedAt:    existingReview.CreatedAt.Format(time.RFC3339),
+	})
+}
+
+// GetActivityReviews アクティビティレビュー一覧
+func (ctrl *ActivityController) GetActivityReviews(c echo.Context) error {
+	uid := c.Get("uid").(string)
+	activityId := c.Param("activityId")
+
+	// アクティビティを取得
+	var activity models.Activity
+	if err := ctrl.db.First(&activity, "id = ?", activityId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "activity_not_found",
+			Message: "アクティビティが見つかりません",
+		})
+	}
+
+	// チームメンバー確認
+	if activity.TeamID == nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "no_team",
+			Message: "チームに紐づいていないアクティビティです",
+		})
+	}
+
+	var member models.TeamMember
+	if err := ctrl.db.First(&member, "team_id = ? AND user_id = ?", *activity.TeamID, uid).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "チームのメンバーではありません",
+		})
+	}
+
+	// レビュー一覧を取得
+	var reviews []models.ActivityReview
+	if err := ctrl.db.Where("activity_id = ?", activityId).
+		Preload("Reviewer").
+		Find(&reviews).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "fetch_failed",
+			Message: "レビューの取得に失敗しました",
+		})
+	}
+
+	responses := make([]response.ActivityReviewResponse, len(reviews))
+	for i, review := range reviews {
+		responses[i] = response.ActivityReviewResponse{
+			ID:           review.ID,
+			ActivityID:   review.ActivityID,
+			ReviewerID:   review.ReviewerID,
+			ReviewerName: review.Reviewer.Name,
+			Status:       review.Status,
+			Comment:      review.Comment,
+			CreatedAt:    review.CreatedAt.Format(time.RFC3339),
+		}
 	}
 
 	return c.JSON(http.StatusOK, responses)
@@ -505,9 +679,11 @@ func toActivityResponse(activity models.Activity, gpsPoints []models.GPSPoint) r
 	resp := response.ActivityResponse{
 		ID:           activity.ID,
 		UserID:       activity.UserID,
+		UserName:     activity.User.Name,
 		TeamID:       "", // TeamIDはnullableなので空文字列を返す
 		ExerciseType: activity.ExerciseType,
 		Status:       activity.Status,
+		ReviewStatus: activity.ReviewStatus,
 		StartedAt:    activity.StartedAt.Format(time.RFC3339),
 		DistanceKM:   activity.DistanceKM,
 		DurationMin:  activity.DurationMin,

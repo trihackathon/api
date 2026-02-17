@@ -122,6 +122,10 @@ func main() {
 	api.GET("/activities", activityController.GetMyActivities)
 	api.GET("/teams/:teamId/activities", activityController.GetTeamActivities)
 
+	// アクティビティレビュー API
+	api.POST("/activities/:activityId/review", activityController.PostActivityReview)
+	api.GET("/activities/:activityId/reviews", activityController.GetActivityReviews)
+
 	// チーム HP・状態 API
 	api.GET("/teams/:teamId/status", teamStatusController.GetTeamStatus)
 

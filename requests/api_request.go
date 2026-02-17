@@ -66,3 +66,9 @@ type GymCheckoutRequest struct {
 	Latitude  float64 `json:"latitude" example:"35.6581"`
 	Longitude float64 `json:"longitude" example:"139.7017"`
 }
+
+// PostActivityReviewRequest アクティビティレビューリクエスト
+type PostActivityReviewRequest struct {
+	Status  string `json:"status" example:"approved"`  // "approved" | "rejected"
+	Comment string `json:"comment" example:"いいペースですね！"`
+}
