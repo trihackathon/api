@@ -14,6 +14,7 @@ type Activity struct {
 	GymLocationID *string    `json:"gym_location_id"`
 	AutoDetected  bool       `json:"auto_detected" gorm:"default:false"`
 	DurationMin   int        `json:"duration_min" gorm:"default:0"`
+	ReviewStatus  string     `json:"review_status" gorm:"default:'pending'"` // pending / approved / rejected
 	CreatedAt     time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 

@@ -109,9 +109,11 @@ type GPSPointResponse struct {
 type ActivityResponse struct {
 	ID              string             `json:"id" example:"01JARQ3KEXAMPLE00003"`
 	UserID          string             `json:"user_id" example:"firebaseUID123"`
+	UserName        string             `json:"user_name" example:"山田太郎"`
 	TeamID          string             `json:"team_id" example:"01JARQ3KEXAMPLE00001"`
 	ExerciseType    string             `json:"exercise_type" example:"running"`
 	Status          string             `json:"status" example:"in_progress"`
+	ReviewStatus    string             `json:"review_status" example:"pending"`
 	StartedAt       string             `json:"started_at" example:"2026-02-10T07:00:00Z"`
 	EndedAt         *string            `json:"ended_at"`
 	DistanceKM      float64            `json:"distance_km,omitempty" example:"5.234"`
@@ -122,6 +124,17 @@ type ActivityResponse struct {
 	GPSPoints       []GPSPointResponse `json:"gps_points,omitempty"`
 	CreatedAt       string             `json:"created_at" example:"2026-02-10T07:00:00Z"`
 	UpdatedAt       string             `json:"updated_at" example:"2026-02-10T07:00:00Z"`
+}
+
+// ActivityReviewResponse レビューレスポンス
+type ActivityReviewResponse struct {
+	ID           string `json:"id" example:"01JARQ3KEXAMPLE00020"`
+	ActivityID   string `json:"activity_id" example:"01JARQ3KEXAMPLE00003"`
+	ReviewerID   string `json:"reviewer_id" example:"firebaseUID456"`
+	ReviewerName string `json:"reviewer_name" example:"佐藤花子"`
+	Status       string `json:"status" example:"approved"`
+	Comment      string `json:"comment" example:"いいペースですね！"`
+	CreatedAt    string `json:"created_at" example:"2026-02-10T12:00:00Z"`
 }
 
 // SendGPSPointsResponse GPSポイント送信レスポンス
@@ -232,6 +245,15 @@ type DailyStat struct {
 	SuccessRate   float64 `json:"success_rate" example:"0.75"`
 	ActivityCount int     `json:"activity_count" example:"4"`
 	IsDanger      bool    `json:"is_danger" example:"false"`
+}
+
+// DisbandVoteResponse 解散投票レスポンス
+type DisbandVoteResponse struct {
+	TeamID     string   `json:"team_id" example:"01JARQ3KEXAMPLE00001"`
+	TotalCount int      `json:"total_count" example:"3"`
+	VotedCount int      `json:"voted_count" example:"1"`
+	VotedUsers []string `json:"voted_users"`
+	Disbanded  bool     `json:"disbanded" example:"false"`
 }
 
 // PredictionResponse 失敗予測レスポンス

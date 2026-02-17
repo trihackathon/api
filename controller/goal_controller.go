@@ -71,15 +71,9 @@ func (ctrl *GoalController) CreateGoal(c echo.Context) error {
 		})
 	}
 
-	// メンバー3人揃っているか確認
+	// メンバー数を確認（チーム結成前でも目標は設定可能）
 	var memberCount int64
 	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", teamId).Count(&memberCount)
-	if memberCount < 3 {
-		return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
-			Error:   "team_not_ready",
-			Message: "チームメンバーが3人揃っていません",
-		})
-	}
 
 	// 既に目標が存在するか確認
 	var existingGoal models.Goal
@@ -99,18 +93,21 @@ func (ctrl *GoalController) CreateGoal(c echo.Context) error {
 		TargetMinDurationMin: req.TargetMinDurationMin,
 	}
 
-	// トランザクションで目標作成 + チームステータス更新
+	// トランザクションで目標作成 + チームステータス更新（3人揃っている場合のみ）
 	if err := ctrl.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&goal).Error; err != nil {
 			return err
 		}
-		now := time.Now()
-		if err := tx.Model(&team).Updates(map[string]interface{}{
-			"status":       "active",
-			"started_at":   now,
-			"current_week": 1,
-		}).Error; err != nil {
-			return err
+		// 3人揃っている場合のみチームをactiveに
+		if memberCount >= 3 {
+			now := time.Now()
+			if err := tx.Model(&team).Updates(map[string]interface{}{
+				"status":       "active",
+				"started_at":   now,
+				"current_week": 1,
+			}).Error; err != nil {
+				return err
+			}
 		}
 		return nil
 	}); err != nil {

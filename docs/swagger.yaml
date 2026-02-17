@@ -148,6 +148,9 @@ definitions:
       id:
         example: 01JARQ3KEXAMPLE00003
         type: string
+      review_status:
+        example: pending
+        type: string
       started_at:
         example: "2026-02-10T07:00:00Z"
         type: string
@@ -162,6 +165,9 @@ definitions:
         type: string
       user_id:
         example: firebaseUID123
+        type: string
+      user_name:
+        example: 山田太郎
         type: string
     type: object
   response.CurrentWeekEvaluationResponse:
@@ -1478,6 +1484,52 @@ paths:
       summary: 自分のユーザー情報を更新
       tags:
       - users
+  /cron/weekly-evaluation:
+    post:
+      description: 全activeチームの週次評価を実行し、HP更新・disbanded処理を行う
+      parameters:
+      - description: Cronシークレットキー
+        in: header
+        name: X-Cron-Secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: 週次評価実行
+      tags:
+      - cron
+  /debug/cleanup-disbanded-teams:
+    post:
+      description: 解散済み（disbanded）チームのteam_membersとdisband_votesレコードを削除（開発環境専用）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: 解散済みチームのクリーンアップ
+      tags:
+      - debug
   /debug/echo:
     post:
       parameters:
@@ -1539,6 +1591,30 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: デバッグ用IDトークン生成
+      tags:
+      - debug
+  /debug/user-team-status:
+    get:
+      description: 現在のユーザーが所属しているチーム、メンバーレコード、チームステータスを確認（開発環境専用）
+      parameters:
+      - description: ユーザーID（Firebase UID）
+        in: query
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: ユーザーのチーム所属状況確認
       tags:
       - debug
 securityDefinitions:

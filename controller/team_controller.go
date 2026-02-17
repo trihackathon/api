@@ -187,3 +187,202 @@ func (ctrl *TeamController) GetTeam(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, response.NewTeamResponse(team, members))
 }
+
+// VoteDisband 解散に投票
+func (ctrl *TeamController) VoteDisband(c echo.Context) error {
+	uid := c.Get("uid").(string)
+	teamId := c.Param("teamId")
+
+	var team models.Team
+	if err := ctrl.db.First(&team, "id = ?", teamId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "team_not_found",
+			Message: "チームが見つかりません",
+		})
+	}
+
+	if team.Status != "forming" && team.Status != "active" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_team_status",
+			Message: "このチームは解散投票できる状態ではありません",
+		})
+	}
+
+	// メンバー確認
+	var member models.TeamMember
+	if err := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).First(&member).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "このチームのメンバーではありません",
+		})
+	}
+
+	// 既に投票済みか確認
+	var existingVote models.DisbandVote
+	if err := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).First(&existingVote).Error; err == nil {
+		return c.JSON(http.StatusConflict, response.ErrorResponse{
+			Error:   "already_voted",
+			Message: "既に解散に投票しています",
+		})
+	}
+
+	// 投票を作成
+	vote := models.DisbandVote{
+		ID:     utils.GenerateULID(),
+		TeamID: teamId,
+		UserID: uid,
+	}
+	if err := ctrl.db.Create(&vote).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "vote_failed",
+			Message: "投票に失敗しました",
+		})
+	}
+
+	// メンバー数と投票数を確認
+	var memberCount int64
+	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", teamId).Count(&memberCount)
+
+	var voteCount int64
+	ctrl.db.Model(&models.DisbandVote{}).Where("team_id = ?", teamId).Count(&voteCount)
+
+	disbanded := false
+
+	// 全員投票済みなら解散
+	if voteCount >= memberCount {
+		if err := ctrl.db.Transaction(func(tx *gorm.DB) error {
+			// チームのステータスを更新
+			if err := tx.Model(&models.Team{}).Where("id = ?", teamId).Update("status", "disbanded").Error; err != nil {
+				return err
+			}
+			// 解散投票を削除
+			if err := tx.Where("team_id = ?", teamId).Delete(&models.DisbandVote{}).Error; err != nil {
+				return err
+			}
+			// チームメンバーを削除（ユーザーが新しいチームを作成できるように）
+			if err := tx.Where("team_id = ?", teamId).Delete(&models.TeamMember{}).Error; err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Error:   "disband_failed",
+				Message: "チームの解散に失敗しました",
+			})
+		}
+		disbanded = true
+	}
+
+	var votes []models.DisbandVote
+	ctrl.db.Where("team_id = ?", teamId).Find(&votes)
+	votedUsers := make([]string, len(votes))
+	for i, v := range votes {
+		votedUsers[i] = v.UserID
+	}
+
+	return c.JSON(http.StatusOK, response.DisbandVoteResponse{
+		TeamID:     teamId,
+		TotalCount: int(memberCount),
+		VotedCount: int(voteCount),
+		VotedUsers: votedUsers,
+		Disbanded:  disbanded,
+	})
+}
+
+// CancelDisbandVote 解散投票を取り消す
+func (ctrl *TeamController) CancelDisbandVote(c echo.Context) error {
+	uid := c.Get("uid").(string)
+	teamId := c.Param("teamId")
+
+	var team models.Team
+	if err := ctrl.db.First(&team, "id = ?", teamId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "team_not_found",
+			Message: "チームが見つかりません",
+		})
+	}
+
+	if team.Status != "forming" && team.Status != "active" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_team_status",
+			Message: "このチームは解散投票できる状態ではありません",
+		})
+	}
+
+	// メンバー確認
+	var member models.TeamMember
+	if err := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).First(&member).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "このチームのメンバーではありません",
+		})
+	}
+
+	// 投票を削除
+	result := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).Delete(&models.DisbandVote{})
+	if result.RowsAffected == 0 {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "vote_not_found",
+			Message: "解散投票が見つかりません",
+		})
+	}
+
+	var memberCount int64
+	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", teamId).Count(&memberCount)
+
+	var votes []models.DisbandVote
+	ctrl.db.Where("team_id = ?", teamId).Find(&votes)
+	votedUsers := make([]string, len(votes))
+	for i, v := range votes {
+		votedUsers[i] = v.UserID
+	}
+
+	return c.JSON(http.StatusOK, response.DisbandVoteResponse{
+		TeamID:     teamId,
+		TotalCount: int(memberCount),
+		VotedCount: len(votes),
+		VotedUsers: votedUsers,
+		Disbanded:  false,
+	})
+}
+
+// GetDisbandVotes 解散投票状況を取得
+func (ctrl *TeamController) GetDisbandVotes(c echo.Context) error {
+	uid := c.Get("uid").(string)
+	teamId := c.Param("teamId")
+
+	var team models.Team
+	if err := ctrl.db.First(&team, "id = ?", teamId).Error; err != nil {
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "team_not_found",
+			Message: "チームが見つかりません",
+		})
+	}
+
+	// メンバー確認
+	var member models.TeamMember
+	if err := ctrl.db.Where("team_id = ? AND user_id = ?", teamId, uid).First(&member).Error; err != nil {
+		return c.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "not_team_member",
+			Message: "このチームのメンバーではありません",
+		})
+	}
+
+	var memberCount int64
+	ctrl.db.Model(&models.TeamMember{}).Where("team_id = ?", teamId).Count(&memberCount)
+
+	var votes []models.DisbandVote
+	ctrl.db.Where("team_id = ?", teamId).Find(&votes)
+	votedUsers := make([]string, len(votes))
+	for i, v := range votes {
+		votedUsers[i] = v.UserID
+	}
+
+	return c.JSON(http.StatusOK, response.DisbandVoteResponse{
+		TeamID:     teamId,
+		TotalCount: int(memberCount),
+		VotedCount: len(votes),
+		VotedUsers: votedUsers,
+		Disbanded:  team.Status == "disbanded",
+	})
+}

@@ -14,6 +14,7 @@ import (
 	_ "github.com/trihackathon/api/docs" // Swagger docs
 	"github.com/trihackathon/api/driver"
 	customMiddleware "github.com/trihackathon/api/middleware"
+	"github.com/trihackathon/api/service"
 )
 
 // @title Trihackathon API
@@ -53,7 +54,7 @@ func main() {
 	r2 := adapter.NewR2Adapter()
 
 	// コントローラー初期化
-	debugController := controller.NewDebugController(fa)
+	debugController := controller.NewDebugController(fa, db)
 	userController := controller.NewUserController(db, r2)
 	teamController := controller.NewTeamController(db)
 	inviteController := controller.NewInviteController(db)
@@ -64,9 +65,18 @@ func main() {
 	evaluationController := controller.NewEvaluationController(db)
 	predictionController := controller.NewPredictionController(db)
 
+	// サービス初期化
+	evaluationService := service.NewEvaluationService(db)
+	cronController := controller.NewCronController(evaluationService)
+
 	// 認証不要のルート
 	e.GET("/debug/health", debugController.Health)
 	e.GET("/debug/token", debugController.Token)
+	e.POST("/debug/cleanup-disbanded-teams", debugController.CleanupDisbandedTeams)
+	e.GET("/debug/user-team-status", debugController.GetUserTeamStatus)
+
+	// Cronエンドポイント（Firebase認証の外）
+	e.POST("/cron/weekly-evaluation", cronController.RunWeeklyEvaluation)
 
 	// 認証必須のルートグループ
 	api := e.Group("/api")
@@ -81,6 +91,9 @@ func main() {
 	api.POST("/teams", teamController.CreateTeam)
 	api.GET("/teams/me", teamController.GetMyTeam)
 	api.GET("/teams/:teamId", teamController.GetTeam)
+	api.POST("/teams/:teamId/disband-vote", teamController.VoteDisband)
+	api.DELETE("/teams/:teamId/disband-vote", teamController.CancelDisbandVote)
+	api.GET("/teams/:teamId/disband-votes", teamController.GetDisbandVotes)
 
 	// 招待コード API
 	api.POST("/teams/:teamId/invite", inviteController.CreateInviteCode)
@@ -108,6 +121,10 @@ func main() {
 	// アクティビティ API（共通）
 	api.GET("/activities", activityController.GetMyActivities)
 	api.GET("/teams/:teamId/activities", activityController.GetTeamActivities)
+
+	// アクティビティレビュー API
+	api.POST("/activities/:activityId/review", activityController.PostActivityReview)
+	api.GET("/activities/:activityId/reviews", activityController.GetActivityReviews)
 
 	// チーム HP・状態 API
 	api.GET("/teams/:teamId/status", teamStatusController.GetTeamStatus)

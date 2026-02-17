@@ -1395,6 +1395,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/cron/weekly-evaluation": {
+            "post": {
+                "description": "全activeチームの週次評価を実行し、HP更新・disbanded処理を行う",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cron"
+                ],
+                "summary": "週次評価実行",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cronシークレットキー",
+                        "name": "X-Cron-Secret",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/cleanup-disbanded-teams": {
+            "post": {
+                "description": "解散済み（disbanded）チームのteam_membersとdisband_votesレコードを削除（開発環境専用）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "debug"
+                ],
+                "summary": "解散済みチームのクリーンアップ",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/debug/echo": {
             "post": {
                 "tags": [
@@ -1486,6 +1555,42 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/user-team-status": {
+            "get": {
+                "description": "現在のユーザーが所属しているチーム、メンバーレコード、チームステータスを確認（開発環境専用）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "debug"
+                ],
+                "summary": "ユーザーのチーム所属状況確認",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ユーザーID（Firebase UID）",
+                        "name": "uid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -1706,6 +1811,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01JARQ3KEXAMPLE00003"
                 },
+                "review_status": {
+                    "type": "string",
+                    "example": "pending"
+                },
                 "started_at": {
                     "type": "string",
                     "example": "2026-02-10T07:00:00Z"
@@ -1725,6 +1834,10 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "example": "firebaseUID123"
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "山田太郎"
                 }
             }
         },
