@@ -240,8 +240,14 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 	ctrl.db.First(&team, "id = ?", inviteCode.TeamID)
 	ctrl.db.Preload("User").Where("team_id = ?", team.ID).Find(&members)
 
+	var goal models.Goal
+	var goalPtr *models.Goal
+	if err := ctrl.db.First(&goal, "team_id = ?", team.ID).Error; err == nil {
+		goalPtr = &goal
+	}
+
 	return c.JSON(http.StatusOK, response.JoinTeamResponse{
-		Team:      response.NewTeamResponse(team, members),
+		Team:      response.NewTeamResponse(team, members, goalPtr),
 		TeamReady: teamReady,
 	})
 }

@@ -113,7 +113,13 @@ func (ctrl *TeamController) CreateTeam(c echo.Context) error {
 	var members []models.TeamMember
 	ctrl.db.Preload("User").Where("team_id = ?", teamID).Find(&members)
 
-	return c.JSON(http.StatusCreated, response.NewTeamResponse(team, members))
+	var goal models.Goal
+	var goalPtr *models.Goal
+	if err := ctrl.db.First(&goal, "team_id = ?", teamID).Error; err == nil {
+		goalPtr = &goal
+	}
+
+	return c.JSON(http.StatusCreated, response.NewTeamResponse(team, members, goalPtr))
 }
 
 // GetMyTeam 自分のチーム取得
@@ -147,7 +153,13 @@ func (ctrl *TeamController) GetMyTeam(c echo.Context) error {
 	var members []models.TeamMember
 	ctrl.db.Preload("User").Where("team_id = ?", team.ID).Find(&members)
 
-	return c.JSON(http.StatusOK, response.NewTeamResponse(team, members))
+	var goal models.Goal
+	var goalPtr *models.Goal
+	if err := ctrl.db.First(&goal, "team_id = ?", team.ID).Error; err == nil {
+		goalPtr = &goal
+	}
+
+	return c.JSON(http.StatusOK, response.NewTeamResponse(team, members, goalPtr))
 }
 
 // GetTeam チーム詳細取得
@@ -185,7 +197,13 @@ func (ctrl *TeamController) GetTeam(c echo.Context) error {
 	var members []models.TeamMember
 	ctrl.db.Preload("User").Where("team_id = ?", teamId).Find(&members)
 
-	return c.JSON(http.StatusOK, response.NewTeamResponse(team, members))
+	var goal models.Goal
+	var goalPtr *models.Goal
+	if err := ctrl.db.First(&goal, "team_id = ?", teamId).Error; err == nil {
+		goalPtr = &goal
+	}
+
+	return c.JSON(http.StatusOK, response.NewTeamResponse(team, members, goalPtr))
 }
 
 // VoteDisband 解散に投票

@@ -7,7 +7,7 @@ import (
 )
 
 // NewTeamResponse TeamモデルからTeamResponseを構築する
-func NewTeamResponse(team models.Team, members []models.TeamMember) TeamResponse {
+func NewTeamResponse(team models.Team, members []models.TeamMember, goal *models.Goal) TeamResponse {
 	memberResponses := make([]TeamMemberResponse, len(members))
 	for i, m := range members {
 		name := m.UserID
@@ -28,6 +28,21 @@ func NewTeamResponse(team models.Team, members []models.TeamMember) TeamResponse
 		startedAt = &s
 	}
 
+	var goalResponse *GoalResponse
+	if goal != nil {
+		gr := GoalResponse{
+			ID:                   goal.ID,
+			TeamID:               goal.TeamID,
+			ExerciseType:         goal.ExerciseType,
+			TargetDistanceKM:     goal.TargetDistanceKM,
+			TargetVisitsPerWeek:  goal.TargetVisitsPerWeek,
+			TargetMinDurationMin: goal.TargetMinDurationMin,
+			CreatedAt:            goal.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
+		}
+		goalResponse = &gr
+	}
+
 	return TeamResponse{
 		ID:           team.ID,
 		Name:         team.Name,
@@ -39,6 +54,7 @@ func NewTeamResponse(team models.Team, members []models.TeamMember) TeamResponse
 		CurrentWeek:  team.CurrentWeek,
 		StartedAt:    startedAt,
 		Members:      memberResponses,
+		Goal:         goalResponse,
 		CreatedAt:    team.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:    team.UpdatedAt.Format(time.RFC3339),
 	}
