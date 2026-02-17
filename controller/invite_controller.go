@@ -198,9 +198,14 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 			return err
 		}
 
-		// 3人揃ったらステータスをactiveに更新
+		// 3人揃ったらステータスをactiveに更新（started_at, current_weekも設定）
 		if memberCount >= 3 {
-			if err := tx.Model(&models.Team{}).Where("id = ?", inviteCode.TeamID).Update("status", "active").Error; err != nil {
+			now := time.Now()
+			if err := tx.Model(&models.Team{}).Where("id = ?", inviteCode.TeamID).Updates(map[string]interface{}{
+				"status":       "active",
+				"started_at":   now,
+				"current_week": 1,
+			}).Error; err != nil {
 				return err
 			}
 			teamReady = true
