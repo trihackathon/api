@@ -1478,6 +1478,34 @@ paths:
       summary: 自分のユーザー情報を更新
       tags:
       - users
+  /cron/weekly-evaluation:
+    post:
+      description: 全activeチームの週次評価を実行し、HP更新・disbanded処理を行う
+      parameters:
+      - description: Cronシークレットキー
+        in: header
+        name: X-Cron-Secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: 週次評価実行
+      tags:
+      - cron
   /debug/echo:
     post:
       parameters:

@@ -54,19 +54,27 @@ func (ctrl *ActivityController) StartRunning(c echo.Context) error {
 		})
 	}
 
-	// アクティビティを作成（GPS機能のみ、Team不要）
+	// アクティビティを作成
 	now := time.Now()
 	activityID := utils.GenerateULID()
 	activity := models.Activity{
 		ID:           activityID,
 		UserID:       uid,
-		TeamID:       nil, // チーム機能は未実装
 		ExerciseType: "running",
 		Status:       "in_progress",
 		StartedAt:    now,
 		DistanceKM:   0,
 		CreatedAt:    now,
 		UpdatedAt:    now,
+	}
+
+	// ユーザーの所属するactiveチーム（exercise_type=running）を検索してTeamIDを設定
+	var member models.TeamMember
+	if err := ctrl.db.Joins("JOIN teams ON teams.id = team_members.team_id").
+		Where("team_members.user_id = ? AND teams.status = ? AND teams.exercise_type = ?",
+			uid, "active", "running").
+		First(&member).Error; err == nil {
+		activity.TeamID = &member.TeamID
 	}
 
 	if err := ctrl.db.Create(&activity).Error; err != nil {

@@ -14,6 +14,7 @@ import (
 	_ "github.com/trihackathon/api/docs" // Swagger docs
 	"github.com/trihackathon/api/driver"
 	customMiddleware "github.com/trihackathon/api/middleware"
+	"github.com/trihackathon/api/service"
 )
 
 // @title Trihackathon API
@@ -64,9 +65,16 @@ func main() {
 	evaluationController := controller.NewEvaluationController(db)
 	predictionController := controller.NewPredictionController(db)
 
+	// サービス初期化
+	evaluationService := service.NewEvaluationService(db)
+	cronController := controller.NewCronController(evaluationService)
+
 	// 認証不要のルート
 	e.GET("/debug/health", debugController.Health)
 	e.GET("/debug/token", debugController.Token)
+
+	// Cronエンドポイント（Firebase認証の外）
+	e.POST("/cron/weekly-evaluation", cronController.RunWeeklyEvaluation)
 
 	// 認証必須のルートグループ
 	api := e.Group("/api")
