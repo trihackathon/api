@@ -234,6 +234,15 @@ type DailyStat struct {
 	IsDanger      bool    `json:"is_danger" example:"false"`
 }
 
+// DisbandVoteResponse 解散投票レスポンス
+type DisbandVoteResponse struct {
+	TeamID     string   `json:"team_id" example:"01JARQ3KEXAMPLE00001"`
+	TotalCount int      `json:"total_count" example:"3"`
+	VotedCount int      `json:"voted_count" example:"1"`
+	VotedUsers []string `json:"voted_users"`
+	Disbanded  bool     `json:"disbanded" example:"false"`
+}
+
 // PredictionResponse 失敗予測レスポンス
 type PredictionResponse struct {
 	UserID              string      `json:"user_id" example:"firebaseUID123"`
