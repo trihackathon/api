@@ -89,6 +89,9 @@ func main() {
 	api.POST("/teams", teamController.CreateTeam)
 	api.GET("/teams/me", teamController.GetMyTeam)
 	api.GET("/teams/:teamId", teamController.GetTeam)
+	api.POST("/teams/:teamId/disband-vote", teamController.VoteDisband)
+	api.DELETE("/teams/:teamId/disband-vote", teamController.CancelDisbandVote)
+	api.GET("/teams/:teamId/disband-votes", teamController.GetDisbandVotes)
 
 	// 招待コード API
 	api.POST("/teams/:teamId/invite", inviteController.CreateInviteCode)
