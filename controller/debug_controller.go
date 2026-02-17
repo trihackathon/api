@@ -9,16 +9,19 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/trihackathon/api/adapter"
+	"github.com/trihackathon/api/models"
 	"github.com/trihackathon/api/requests"
 	"github.com/trihackathon/api/response"
+	"gorm.io/gorm"
 )
 
 type DebugController struct {
 	fa *adapter.FirebaseAdapter
+	db *gorm.DB
 }
 
-func NewDebugController(fa *adapter.FirebaseAdapter) *DebugController {
-	return &DebugController{fa: fa}
+func NewDebugController(fa *adapter.FirebaseAdapter, db *gorm.DB) *DebugController {
+	return &DebugController{fa: fa, db: db}
 }
 
 // @Summary Health check
@@ -144,4 +147,151 @@ func exchangeCustomTokenForIDToken(customToken, apiKey string) (string, error) {
 		return "", fmt.Errorf("IDトークンが空です")
 	}
 	return result.IDToken, nil
+}
+
+// CleanupDisbandedTeams 解散済みチームのメンバーと投票を削除
+// @Summary 解散済みチームのクリーンアップ
+// @Description 解散済み（disbanded）チームのteam_membersとdisband_votesレコードを削除（開発環境専用）
+// @Tags debug
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} response.ErrorResponse
+// @Router /debug/cleanup-disbanded-teams [post]
+func (ctrl *DebugController) CleanupDisbandedTeams(ctx echo.Context) error {
+	if os.Getenv("FLAVOR") != "dev" {
+		return ctx.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "forbidden",
+			Message: "このエンドポイントは開発環境でのみ使用できます",
+		})
+	}
+
+	// 解散済みチームのIDを取得
+	var disbandedTeams []models.Team
+	if err := ctrl.db.Where("status = ?", "disbanded").Find(&disbandedTeams).Error; err != nil {
+		return ctx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "query_failed",
+			Message: fmt.Sprintf("チームの取得に失敗: %v", err),
+		})
+	}
+
+	teamIDs := make([]string, len(disbandedTeams))
+	for i, team := range disbandedTeams {
+		teamIDs[i] = team.ID
+	}
+
+	if len(teamIDs) == 0 {
+		return ctx.JSON(http.StatusOK, map[string]interface{}{
+			"message":         "解散済みチームはありません",
+			"deleted_votes":   0,
+			"deleted_members": 0,
+		})
+	}
+
+	// トランザクションでクリーンアップ
+	var deletedVotes int64
+	var deletedMembers int64
+
+	err := ctrl.db.Transaction(func(tx *gorm.DB) error {
+		// 解散投票を削除
+		result := tx.Where("team_id IN ?", teamIDs).Delete(&models.DisbandVote{})
+		if result.Error != nil {
+			return result.Error
+		}
+		deletedVotes = result.RowsAffected
+
+		// チームメンバーを削除
+		result = tx.Where("team_id IN ?", teamIDs).Delete(&models.TeamMember{})
+		if result.Error != nil {
+			return result.Error
+		}
+		deletedMembers = result.RowsAffected
+
+		return nil
+	})
+
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "cleanup_failed",
+			Message: fmt.Sprintf("クリーンアップに失敗: %v", err),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"message":         "クリーンアップ完了",
+		"disbanded_teams": len(teamIDs),
+		"deleted_votes":   deletedVotes,
+		"deleted_members": deletedMembers,
+		"team_ids":        teamIDs,
+	})
+}
+
+// GetUserTeamStatus 現在のユーザーのチーム所属状況を確認
+// @Summary ユーザーのチーム所属状況確認
+// @Description 現在のユーザーが所属しているチーム、メンバーレコード、チームステータスを確認（開発環境専用）
+// @Tags debug
+// @Produce json
+// @Param uid query string true "ユーザーID（Firebase UID）"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} response.ErrorResponse
+// @Router /debug/user-team-status [get]
+func (ctrl *DebugController) GetUserTeamStatus(ctx echo.Context) error {
+	if os.Getenv("FLAVOR") != "dev" {
+		return ctx.JSON(http.StatusForbidden, response.ErrorResponse{
+			Error:   "forbidden",
+			Message: "このエンドポイントは開発環境でのみ使用できます",
+		})
+	}
+
+	uid := ctx.QueryParam("uid")
+	if uid == "" {
+		return ctx.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "missing_uid",
+			Message: "uid クエリパラメータが必要です",
+		})
+	}
+
+	// ユーザーのすべてのチームメンバーレコードを取得
+	var members []models.TeamMember
+	if err := ctrl.db.Preload("Team").Where("user_id = ?", uid).Find(&members).Error; err != nil {
+		return ctx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "query_failed",
+			Message: fmt.Sprintf("クエリ失敗: %v", err),
+		})
+	}
+
+	type MemberInfo struct {
+		MemberID   string `json:"member_id"`
+		TeamID     string `json:"team_id"`
+		TeamName   string `json:"team_name"`
+		TeamStatus string `json:"team_status"`
+		Role       string `json:"role"`
+		JoinedAt   string `json:"joined_at"`
+	}
+
+	memberInfos := make([]MemberInfo, len(members))
+	for i, m := range members {
+		memberInfos[i] = MemberInfo{
+			MemberID:   m.ID,
+			TeamID:     m.TeamID,
+			TeamName:   m.Team.Name,
+			TeamStatus: m.Team.Status,
+			Role:       m.Role,
+			JoinedAt:   m.JoinedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	// アクティブチーム（forming/active）に所属しているか
+	var activeMembers []models.TeamMember
+	ctrl.db.
+		Joins("JOIN teams ON teams.id = team_members.team_id").
+		Where("team_members.user_id = ? AND teams.status IN ?", uid, []string{"forming", "active"}).
+		Find(&activeMembers)
+
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"user_id":             uid,
+		"total_memberships":   len(members),
+		"active_memberships":  len(activeMembers),
+		"all_memberships":     memberInfos,
+		"can_create_new_team": len(activeMembers) == 0,
+	})
 }

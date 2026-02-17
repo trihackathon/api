@@ -162,15 +162,42 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 		})
 	}
 
-	// メンバー追加
-	memberID := utils.GenerateULID()
-	member := models.TeamMember{
-		ID:     memberID,
-		TeamID: inviteCode.TeamID,
-		UserID: uid,
-		Role:   "member",
-	}
-	if err := ctrl.db.Create(&member).Error; err != nil {
+	// メンバー追加とチームステータス更新をトランザクションで実行
+	var team models.Team
+	var members []models.TeamMember
+	var teamReady bool
+
+	err = ctrl.db.Transaction(func(tx *gorm.DB) error {
+		// メンバー追加
+		memberID := utils.GenerateULID()
+		member := models.TeamMember{
+			ID:     memberID,
+			TeamID: inviteCode.TeamID,
+			UserID: uid,
+			Role:   "member",
+		}
+		if err := tx.Create(&member).Error; err != nil {
+			return err
+		}
+
+		// メンバー数を確認
+		var memberCount int64
+		if err := tx.Model(&models.TeamMember{}).Where("team_id = ?", inviteCode.TeamID).Count(&memberCount).Error; err != nil {
+			return err
+		}
+
+		// 3人揃ったらステータスをactiveに更新
+		if memberCount >= 3 {
+			if err := tx.Model(&models.Team{}).Where("id = ?", inviteCode.TeamID).Update("status", "active").Error; err != nil {
+				return err
+			}
+			teamReady = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "join_failed",
 			Message: "チームへの参加に失敗しました",
@@ -178,13 +205,8 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 	}
 
 	// レスポンス構築
-	var team models.Team
 	ctrl.db.First(&team, "id = ?", inviteCode.TeamID)
-
-	var members []models.TeamMember
 	ctrl.db.Preload("User").Where("team_id = ?", team.ID).Find(&members)
-
-	teamReady := len(members) >= 3
 
 	return c.JSON(http.StatusOK, response.JoinTeamResponse{
 		Team:      response.NewTeamResponse(team, members),

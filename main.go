@@ -54,7 +54,7 @@ func main() {
 	r2 := adapter.NewR2Adapter()
 
 	// コントローラー初期化
-	debugController := controller.NewDebugController(fa)
+	debugController := controller.NewDebugController(fa, db)
 	userController := controller.NewUserController(db, r2)
 	teamController := controller.NewTeamController(db)
 	inviteController := controller.NewInviteController(db)
@@ -72,6 +72,8 @@ func main() {
 	// 認証不要のルート
 	e.GET("/debug/health", debugController.Health)
 	e.GET("/debug/token", debugController.Token)
+	e.POST("/debug/cleanup-disbanded-teams", debugController.CleanupDisbandedTeams)
+	e.GET("/debug/user-team-status", debugController.GetUserTeamStatus)
 
 	// Cronエンドポイント（Firebase認証の外）
 	e.POST("/cron/weekly-evaluation", cronController.RunWeeklyEvaluation)

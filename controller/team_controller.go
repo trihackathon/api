@@ -251,7 +251,16 @@ func (ctrl *TeamController) VoteDisband(c echo.Context) error {
 	// 全員投票済みなら解散
 	if voteCount >= memberCount {
 		if err := ctrl.db.Transaction(func(tx *gorm.DB) error {
+			// チームのステータスを更新
 			if err := tx.Model(&models.Team{}).Where("id = ?", teamId).Update("status", "disbanded").Error; err != nil {
+				return err
+			}
+			// 解散投票を削除
+			if err := tx.Where("team_id = ?", teamId).Delete(&models.DisbandVote{}).Error; err != nil {
+				return err
+			}
+			// チームメンバーを削除（ユーザーが新しいチームを作成できるように）
+			if err := tx.Where("team_id = ?", teamId).Delete(&models.TeamMember{}).Error; err != nil {
 				return err
 			}
 			return nil
@@ -377,4 +386,3 @@ func (ctrl *TeamController) GetDisbandVotes(c echo.Context) error {
 		Disbanded:  team.Status == "disbanded",
 	})
 }
-
