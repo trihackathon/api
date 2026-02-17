@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -162,6 +165,15 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 		})
 	}
 
+	// ユーザーが users テーブルに存在するか確認（TeamMember の外部キー制約のため必須）
+	var user models.User
+	if err := ctrl.db.First(&user, "id = ?", uid).Error; err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
+			Error:   "user_not_registered",
+			Message: "プロフィールが未登録です。先にアカウント設定（新規登録）を完了してください",
+		})
+	}
+
 	// メンバー追加とチームステータス更新をトランザクションで実行
 	var team models.Team
 	var members []models.TeamMember
@@ -198,9 +210,24 @@ func (ctrl *InviteController) JoinTeam(c echo.Context) error {
 	})
 
 	if err != nil {
+		log.Printf("[JoinTeam] transaction error: %v", err)
+		// ユーザーが存在しない場合のエラーメッセージを改善
+		errStr := err.Error()
+		if strings.Contains(errStr, "foreign key") || strings.Contains(errStr, "violates foreign key") {
+			return c.JSON(http.StatusUnprocessableEntity, response.ErrorResponse{
+				Error:   "user_not_registered",
+				Message: "プロフィールが未登録です。先にアカウント設定を完了してください",
+			})
+		}
+		if strings.Contains(errStr, "unique") || strings.Contains(errStr, "duplicate") {
+			return c.JSON(http.StatusConflict, response.ErrorResponse{
+				Error:   "already_in_team",
+				Message: "既にこのチームに参加しています",
+			})
+		}
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "join_failed",
-			Message: "チームへの参加に失敗しました",
+			Message: fmt.Sprintf("チームへの参加に失敗しました: %v", err),
 		})
 	}
 
