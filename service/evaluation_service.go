@@ -90,10 +90,10 @@ func (s *EvaluationService) evaluateTeam(team models.Team) error {
 		totalHPChange := 0
 
 		for _, member := range members {
-			// Get completed activities for this member in this week
+			// Get completed activities for this member in this week (exclude rejected)
 			var activities []models.Activity
-			tx.Where("user_id = ? AND team_id = ? AND status = ? AND started_at >= ? AND started_at < ?",
-				member.UserID, team.ID, "completed", weekStart, weekEnd).
+			tx.Where("user_id = ? AND team_id = ? AND status = ? AND started_at >= ? AND started_at < ? AND (review_status IS NULL OR review_status != ?)",
+				member.UserID, team.ID, "completed", weekStart, weekEnd, "rejected").
 				Find(&activities)
 
 			var totalDist float64
