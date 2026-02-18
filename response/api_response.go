@@ -238,6 +238,7 @@ type CurrentWeekMemberProgress struct {
 	UserName              string                `json:"user_name" example:"山田太郎"`
 	TotalDistanceKM       float64               `json:"total_distance_km" example:"12.5"`
 	TotalVisits           int                   `json:"total_visits" example:"0"`
+	QualifiedVisits       int                   `json:"qualified_visits" example:"0"` // 滞在時間目標を満たした訪問回数
 	TotalDurationMin      int                   `json:"total_duration_min" example:"0"`
 	TargetProgressPercent float64               `json:"target_progress_percent" example:"83.3"`
 	OnTrack               bool                  `json:"on_track" example:"true"`

@@ -99,12 +99,21 @@ func (s *EvaluationService) evaluateTeam(team models.Team) error {
 			var totalDist float64
 			var totalVisits int
 			var totalDuration int
+			var qualifiedVisits int // 滞在時間が目標を満たした訪問回数
 
 			for _, a := range activities {
 				totalDist += a.DistanceKM
 				totalDuration += a.DurationMin
 				if a.ExerciseType == "gym" {
 					totalVisits++
+					// target_min_duration_min が設定されている場合はその時間以上の訪問のみカウント
+					if goal.TargetMinDurationMin != nil {
+						if a.DurationMin >= *goal.TargetMinDurationMin {
+							qualifiedVisits++
+						}
+					} else {
+						qualifiedVisits++
+					}
 				}
 			}
 
@@ -116,7 +125,8 @@ func (s *EvaluationService) evaluateTeam(team models.Team) error {
 					targetMet = true
 				}
 			case "gym":
-				if goal.TargetVisitsPerWeek != nil && totalVisits >= *goal.TargetVisitsPerWeek {
+				// 達成条件: 目標滞在時間を満たした訪問回数が目標回数以上
+				if goal.TargetVisitsPerWeek != nil && qualifiedVisits >= *goal.TargetVisitsPerWeek {
 					targetMet = true
 				}
 			}

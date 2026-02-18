@@ -146,6 +146,7 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 		var totalDist float64
 		var totalVisits int
 		var totalDuration int
+		var qualifiedVisits int // 滞在時間目標を満たした訪問回数
 		var actSummaries []response.WeekActivitySummary
 
 		for _, a := range activities {
@@ -153,6 +154,13 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 			totalDuration += a.DurationMin
 			if a.ExerciseType == "gym" {
 				totalVisits++
+				if goal.TargetMinDurationMin != nil {
+					if a.DurationMin >= *goal.TargetMinDurationMin {
+						qualifiedVisits++
+					}
+				} else {
+					qualifiedVisits++
+				}
 			}
 			actSummaries = append(actSummaries, response.WeekActivitySummary{
 				ID:          a.ID,
@@ -173,7 +181,7 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 			}
 		case "gym":
 			if goal.TargetVisitsPerWeek != nil && *goal.TargetVisitsPerWeek > 0 {
-				progressPercent = (float64(totalVisits) / float64(*goal.TargetVisitsPerWeek)) * 100
+				progressPercent = (float64(qualifiedVisits) / float64(*goal.TargetVisitsPerWeek)) * 100
 			}
 		}
 		if progressPercent > 100 {
@@ -187,6 +195,7 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 			UserName:              m.User.Name,
 			TotalDistanceKM:       totalDist,
 			TotalVisits:           totalVisits,
+			QualifiedVisits:       qualifiedVisits,
 			TotalDurationMin:      totalDuration,
 			TargetProgressPercent: progressPercent,
 			OnTrack:               onTrack,
