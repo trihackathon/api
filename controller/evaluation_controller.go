@@ -173,15 +173,23 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 			actSummaries = []response.WeekActivitySummary{}
 		}
 
+		// 有効目標 = ベース目標 × メンバーの倍率（前週未達成時は1.5倍ペナルティ）
+		multiplier := m.TargetMultiplier
+		if multiplier <= 0 {
+			multiplier = 1.0
+		}
+
 		var progressPercent float64
 		switch team.ExerciseType {
 		case "running":
 			if goal.TargetDistanceKM != nil && *goal.TargetDistanceKM > 0 {
-				progressPercent = (totalDist / *goal.TargetDistanceKM) * 100
+				effectiveTarget := *goal.TargetDistanceKM * multiplier
+				progressPercent = (totalDist / effectiveTarget) * 100
 			}
 		case "gym":
 			if goal.TargetVisitsPerWeek != nil && *goal.TargetVisitsPerWeek > 0 {
-				progressPercent = (float64(qualifiedVisits) / float64(*goal.TargetVisitsPerWeek)) * 100
+				effectiveTarget := float64(*goal.TargetVisitsPerWeek) * multiplier
+				progressPercent = (float64(qualifiedVisits) / effectiveTarget) * 100
 			}
 		}
 		if progressPercent > 100 {
@@ -199,6 +207,7 @@ func (ctrl *EvaluationController) GetCurrentWeekEvaluation(c echo.Context) error
 			TotalDurationMin:      totalDuration,
 			TargetProgressPercent: progressPercent,
 			OnTrack:               onTrack,
+			TargetMultiplier:      multiplier,
 			ActivitiesThisWeek:    actSummaries,
 		})
 	}

@@ -242,6 +242,7 @@ type CurrentWeekMemberProgress struct {
 	TotalDurationMin      int                   `json:"total_duration_min" example:"0"`
 	TargetProgressPercent float64               `json:"target_progress_percent" example:"83.3"`
 	OnTrack               bool                  `json:"on_track" example:"true"`
+	TargetMultiplier      float64               `json:"target_multiplier" example:"1.0"` // 1.0=通常, 1.5=前週未達成ペナルティ
 	ActivitiesThisWeek    []WeekActivitySummary `json:"activities_this_week"`
 }
 

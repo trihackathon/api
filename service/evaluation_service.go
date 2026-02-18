@@ -117,17 +117,29 @@ func (s *EvaluationService) evaluateTeam(team models.Team) error {
 				}
 			}
 
+			// 有効目標 = ベース目標 × メンバーの倍率（前週未達成時は1.5倍ペナルティ）
+			multiplier := member.TargetMultiplier
+			if multiplier <= 0 {
+				multiplier = 1.0
+			}
+
 			// Check if target is met
 			targetMet := false
 			switch team.ExerciseType {
 			case "running":
-				if goal.TargetDistanceKM != nil && totalDist >= *goal.TargetDistanceKM {
-					targetMet = true
+				if goal.TargetDistanceKM != nil {
+					effectiveTarget := *goal.TargetDistanceKM * multiplier
+					if totalDist >= effectiveTarget {
+						targetMet = true
+					}
 				}
 			case "gym":
 				// 達成条件: 目標滞在時間を満たした訪問回数が目標回数以上
-				if goal.TargetVisitsPerWeek != nil && qualifiedVisits >= *goal.TargetVisitsPerWeek {
-					targetMet = true
+				if goal.TargetVisitsPerWeek != nil {
+					effectiveTarget := float64(*goal.TargetVisitsPerWeek) * multiplier
+					if float64(qualifiedVisits) >= effectiveTarget {
+						targetMet = true
+					}
 				}
 			}
 
@@ -164,6 +176,37 @@ func (s *EvaluationService) evaluateTeam(team models.Team) error {
 			}
 			if err := tx.Create(&eval).Error; err != nil {
 				return fmt.Errorf("failed to create evaluation: %w", err)
+			}
+
+		}
+
+		// 翌週の目標倍率: 全員達成→全員1.0 / 全員未達成→全員1.5倍 / 一部未達成→達成者のみ1.5倍
+		if allMet {
+			if err := tx.Model(&models.TeamMember{}).
+				Where("team_id = ?", team.ID).
+				Update("target_multiplier", 1.0).Error; err != nil {
+				return fmt.Errorf("failed to reset member target multiplier: %w", err)
+			}
+		} else {
+			var evals []models.WeeklyEvaluation
+			tx.Where("team_id = ? AND week_number = ?", team.ID, team.CurrentWeek).Find(&evals)
+			anyMet := false
+			for _, e := range evals {
+				if e.TargetMet {
+					anyMet = true
+					break
+				}
+			}
+			for _, e := range evals {
+				nextMultiplier := 1.5
+				if anyMet && !e.TargetMet {
+					nextMultiplier = 1.0 // 一部未達成で自分は未達成
+				}
+				if err := tx.Model(&models.TeamMember{}).
+					Where("team_id = ? AND user_id = ?", team.ID, e.UserID).
+					Update("target_multiplier", nextMultiplier).Error; err != nil {
+					return fmt.Errorf("failed to update member target multiplier: %w", err)
+				}
 			}
 		}
 

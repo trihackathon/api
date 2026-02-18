@@ -148,20 +148,33 @@ func (ctrl *TeamStatusController) buildMembersProgress(teamId string, members []
 	weekEnd := weekStart.AddDate(0, 0, 7)
 
 	for _, m := range members {
-		// 今週のアクティビティ集計
+		// 今週のアクティビティ集計（gymはqualifiedVisitsが必要なため別途取得）
 		var activities []models.Activity
-		ctrl.db.Where("user_id = ? AND team_id = ? AND status = ? AND started_at >= ? AND started_at < ?",
-			m.UserID, teamId, "completed", weekStart, weekEnd).Find(&activities)
+		ctrl.db.Where("user_id = ? AND team_id = ? AND status = ? AND started_at >= ? AND started_at < ? AND (review_status IS NULL OR review_status != ?)",
+			m.UserID, teamId, "completed", weekStart, weekEnd, "rejected").Find(&activities)
 
 		var totalDist float64
 		var totalVisits int
 		var totalDuration int
+		var qualifiedVisits int
 		for _, a := range activities {
 			totalDist += a.DistanceKM
 			totalDuration += a.DurationMin
 			if a.ExerciseType == "gym" {
 				totalVisits++
+				if goal.TargetMinDurationMin != nil {
+					if a.DurationMin >= *goal.TargetMinDurationMin {
+						qualifiedVisits++
+					}
+				} else {
+					qualifiedVisits++
+				}
 			}
+		}
+
+		multiplier := m.TargetMultiplier
+		if multiplier <= 0 {
+			multiplier = 1.0
 		}
 
 		var progressPercent float64
@@ -173,13 +186,19 @@ func (ctrl *TeamStatusController) buildMembersProgress(teamId string, members []
 		case "running":
 			distPtr = &totalDist
 			if goal.TargetDistanceKM != nil && *goal.TargetDistanceKM > 0 {
-				progressPercent = (totalDist / *goal.TargetDistanceKM) * 100
+				effectiveTarget := *goal.TargetDistanceKM * multiplier
+				progressPercent = (totalDist / effectiveTarget) * 100
 			}
 		case "gym":
 			visitsPtr = &totalVisits
 			durationPtr = &totalDuration
 			if goal.TargetVisitsPerWeek != nil && *goal.TargetVisitsPerWeek > 0 {
-				progressPercent = (float64(totalVisits) / float64(*goal.TargetVisitsPerWeek)) * 100
+				effectiveTarget := float64(*goal.TargetVisitsPerWeek) * multiplier
+				visitCount := totalVisits
+				if goal.TargetMinDurationMin != nil {
+					visitCount = qualifiedVisits
+				}
+				progressPercent = (float64(visitCount) / effectiveTarget) * 100
 			}
 		}
 		if progressPercent > 100 {
